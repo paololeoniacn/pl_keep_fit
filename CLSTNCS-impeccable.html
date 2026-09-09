@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e0f12">
+<title>Allenamento Paolo</title>
+<style>
+  :root{
+    /* Superfici — near-black neutro, leggermente freddo */
+    --bg:        oklch(0.155 0.006 260);
+    --surface:   oklch(0.205 0.008 260);
+    --surface-2: oklch(0.255 0.009 260);
+    --line:      oklch(0.30 0.010 260);
+
+    /* Inchiostro */
+    --ink:   oklch(0.975 0 0);
+    --muted: oklch(0.74 0.012 260);   /* ≥4.5:1 su --bg */
+    --faint: oklch(0.60 0.012 260);   /* solo testo grande */
+
+    /* Fasi (identità preservata: verde / arancio / blu) */
+    --prep:   oklch(0.78 0.165 66);   /* preparati  */
+    --active: oklch(0.855 0.205 156); /* esercizio  */
+    --rest:   oklch(0.68 0.165 255);  /* recupero   */
+
+    --phase: var(--active);
+
+    --r: 16px;
+    --r-lg: 22px;
+    --ease: cubic-bezier(0.22,1,0.36,1);
+
+    --z-bar: 40;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{ height:100%; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100dvh;
+    overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    text-rendering:optimizeLegibility;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Barra progresso sessione (globale, in alto) ---------- */
+  #session-bar{
+    position:fixed; top:0; left:0; right:0; height:4px;
+    background:oklch(0.26 0.008 260);
+    z-index:var(--z-bar);
+    opacity:0; transition:opacity .3s var(--ease);
+  }
+  #session-bar.on{ opacity:1; }
+  #session-fill{
+    height:100%; width:0%;
+    background:var(--phase);
+    border-radius:0 3px 3px 0;
+    transition:width .6s var(--ease), background-color .35s var(--ease);
+  }
+
+  /* ---------- Toggle musica di sottofondo ---------- */
+  .music-toggle{
+    position:fixed;
+    top:calc(env(safe-area-inset-top) + .55rem); right:.85rem;
+    z-index:calc(var(--z-bar) + 1);
+    width:44px; height:44px; border-radius:50%;
+    display:grid; place-items:center;
+    color:var(--muted);
+    background:color-mix(in oklch, var(--surface) 82%, transparent);
+    border:1px solid var(--line);
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    cursor:pointer;
+    transition:color .18s var(--ease), transform .12s var(--ease);
+  }
+  .music-toggle:active{ transform:scale(.92); }
+  .music-toggle:focus-visible{ outline:2px solid var(--active); outline-offset:2px; }
+  .music-toggle svg{ width:20px; height:20px; }
+  .music-toggle .i-off{ display:none; }
+  .music-toggle.off{ color:var(--faint); }
+  .music-toggle.off .i-on{ display:none; }
+  .music-toggle.off .i-off{ display:block; }
+
+  /* ---------- Schermate ---------- */
+  .screen{
+    position:fixed; inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    padding:calc(env(safe-area-inset-top) + 1.5rem) 1.25rem calc(env(safe-area-inset-bottom) + 1.1rem);
+    text-align:center;
+  }
+  .screen.active{ display:flex; animation:screenIn .32s var(--ease); }
+  @keyframes screenIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+
+  #screen-preread{  --phase:var(--prep);   }
+  #screen-exercise{ --phase:var(--active); }
+  #screen-rest{     --phase:var(--rest);   }
+
+  .wrap{ width:100%; max-width:34rem; margin:0 auto; display:contents; }
+
+  /* ---------- Header di fase ---------- */
+  .s-head{
+    width:100%; max-width:34rem;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:1rem;
+    font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  }
+  .s-phase{ color:var(--phase); display:inline-flex; align-items:center; gap:.5rem; min-width:0; }
+  .s-phase .dot{ width:.5rem; height:.5rem; border-radius:50%; background:var(--phase); flex:none;
+    box-shadow:0 0 0 0 color-mix(in oklch, var(--phase) 60%, transparent); }
+  .s-phase span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .s-count{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
+  /* Evita che il contatore finisca sotto il toggle musica (fisso in alto a dx) */
+  @media (max-width: 620px){ .s-head{ padding-right:2.75rem; } }
+
+  /* ---------- COSA — titolo esercizio ---------- */
+  .ex-title{
+    width:100%; max-width:34rem;
+    margin-top:.9rem;
+    font-size:clamp(1.55rem, 6.5vw, 2.15rem);
+    font-weight:800; letter-spacing:-0.025em; line-height:1.05;
+    text-wrap:balance;
+  }
+
+  .ref{
+    margin-top:.55rem;
+    display:inline-flex; align-items:center; gap:.4rem;
+    font-size:.74rem; font-weight:600; letter-spacing:.04em;
+    color:var(--phase);
+    background:color-mix(in oklch, var(--phase) 12%, transparent);
+    border:1px solid color-mix(in oklch, var(--phase) 32%, transparent);
+    padding:.28rem .6rem; border-radius:999px;
+  }
+
+  /* ---------- COME — passi step-by-step ---------- */
+  .steps{
+    list-style:none; counter-reset:s;
+    width:100%; max-width:32rem;
+    margin-top:1rem;
+    display:flex; flex-direction:column; gap:.5rem;
+    text-align:left;
+  }
+  .steps li{
+    counter-increment:s;
+    display:flex; gap:.7rem; align-items:flex-start;
+    font-size:clamp(.98rem, 3.9vw, 1.12rem); line-height:1.28;
+    color:var(--ink);
+  }
+  .steps li::before{
+    content:counter(s);
+    flex:none;
+    width:1.55em; height:1.55em; margin-top:.05em;
+    display:grid; place-content:center;
+    font-size:.78em; font-weight:800; font-variant-numeric:tabular-nums;
+    color:var(--phase);
+    background:color-mix(in oklch, var(--phase) 15%, transparent);
+    border-radius:50%;
+  }
+  .cue{
+    width:100%; max-width:32rem;
+    margin-top:.85rem;
+    display:flex; align-items:center; gap:.55rem;
+    font-size:.95rem; font-weight:650; line-height:1.25;
+    text-align:left;
+    color:var(--phase);
+    background:color-mix(in oklch, var(--phase) 13%, transparent);
+    border-radius:12px;
+    padding:.6rem .8rem;
+  }
+  .cue::before{ content:"▸"; font-weight:900; }
+
+  /* ---------- Quadrante timer ---------- */
+  .dial{
+    position:relative; margin:auto 0;
+    width:clamp(196px, 40vh, 300px); aspect-ratio:1;
+    display:grid; place-items:center;
+    flex:none;
+  }
+  .dial::before{
+    content:""; position:absolute; inset:-14%;
+    background:radial-gradient(closest-side,
+      color-mix(in oklch, var(--phase) 24%, transparent), transparent 72%);
+    filter:blur(6px);
+    z-index:-1;
+    opacity:.9;
+  }
+  .ring{ width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+  .ring-track{ fill:none; stroke:color-mix(in oklch, var(--phase) 20%, transparent); stroke-width:6.5; }
+  .ring-prog{
+    fill:none; stroke:var(--phase); stroke-width:6.5; stroke-linecap:round;
+    transition:stroke-dashoffset .95s linear;
+    filter:drop-shadow(0 0 6px color-mix(in oklch, var(--phase) 55%, transparent));
+  }
+  .dial-center{ position:absolute; inset:0; display:grid; place-content:center; gap:.35rem; }
+  .dial-num{
+    font-size:clamp(3.2rem, 15vw, 5rem); font-weight:800;
+    font-variant-numeric:tabular-nums; letter-spacing:-0.04em; line-height:1;
+    color:var(--phase);
+  }
+  .dose{
+    justify-self:center;
+    font-size:.82rem; font-weight:700; letter-spacing:.02em;
+    color:var(--ink);
+    background:color-mix(in oklch, var(--phase) 16%, transparent);
+    border:1px solid color-mix(in oklch, var(--phase) 30%, transparent);
+    padding:.3rem .7rem; border-radius:999px;
+    max-width:16rem;
+  }
+  .dial.ending .dial-num{ animation:tick .9s var(--ease) infinite; }
+  @keyframes tick{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+
+  .rest-next{
+    margin-top:.4rem; font-size:1.02rem; color:var(--muted); line-height:1.35;
+  }
+  .rest-next b{ color:var(--ink); font-weight:750; }
+
+  /* ---------- Controlli (thumb zone) ---------- */
+  .controls{
+    width:100%; max-width:34rem;
+    margin-top:1.1rem;
+    display:flex; gap:.6rem;
+  }
+  .btn{
+    flex:1; min-height:60px;
+    display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    padding:.9rem 1rem;
+    font-size:1rem; font-weight:750; letter-spacing:.01em;
+    color:var(--ink);
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:var(--r);
+    cursor:pointer;
+    transition:transform .12s var(--ease), background-color .18s var(--ease), border-color .18s var(--ease);
+  }
+  .btn svg{ width:1.15em; height:1.15em; flex:none; }
+  .btn:active{ transform:scale(.97); background:var(--surface); }
+  .btn:focus-visible{ outline:2px solid var(--phase); outline-offset:2px; }
+  .btn-ghost{ flex:0 0 auto; color:var(--muted); background:transparent; }
+  .btn-ghost:active{ background:var(--surface); }
+  .btn-primary{
+    flex:1.5;
+    color:oklch(0.2 0.02 260);
+    background:var(--phase);
+    border-color:transparent;
+    box-shadow:0 8px 24px -12px color-mix(in oklch, var(--phase) 80%, transparent);
+  }
+  .btn-primary:active{ background:color-mix(in oklch, var(--phase) 88%, black); }
+  .btn-block{ flex:1; }
+  [hidden]{ display:none !important; }
+
+  /* ---------- Start / End ---------- */
+  .hero{ margin:auto 0; display:flex; flex-direction:column; align-items:center; gap:1.1rem; }
+  .kicker{ font-size:.78rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--active); }
+  .hero h1{ font-size:clamp(2rem, 9vw, 2.9rem); font-weight:850; letter-spacing:-0.03em; line-height:1.02; text-wrap:balance; }
+  .hero p{ font-size:1.02rem; line-height:1.5; color:var(--muted); max-width:30rem; }
+  .meta{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem;
+    margin-top:.2rem;
+  }
+  .meta span{
+    font-size:.8rem; font-weight:650; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line);
+    padding:.4rem .75rem; border-radius:999px;
+  }
+  .end-check{
+    width:74px; height:74px; border-radius:50%;
+    display:grid; place-content:center;
+    background:color-mix(in oklch, var(--active) 18%, transparent);
+    color:var(--active);
+    animation:pop .5s var(--ease) both;
+  }
+  .end-check svg{ width:38px; height:38px; }
+  @keyframes pop{ from{ transform:scale(.6); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
+       transition-duration:.001ms !important; }
+    .ring-prog{ transition:none; }
+  }
+
+  /* Schermi bassi: alleggerisci i passi per far respirare timer + controlli */
+  @media (max-height: 680px){
+    .steps{ gap:.4rem; margin-top:.7rem; }
+    .steps li{ font-size:.95rem; }
+    .ex-title{ margin-top:.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<button id="btn-music" class="music-toggle" aria-label="Musica di sottofondo" aria-pressed="true">
+  <svg class="i-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.8 5.2a9 9 0 0 1 0 13.6"/></svg>
+  <svg class="i-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m17 9 6 6"/><path d="m23 9-6 6"/></svg>
+</button>
+
+<div id="session-bar"><div id="session-fill"></div></div>
+
+<!-- 1. START -->
+<div id="screen-start" class="screen active">
+  <div class="hero">
+    <div class="kicker">Settimana 1 · Asciuga &amp; Allinea</div>
+    <h1>Allenamento<br>Paolo</h1>
+    <p>Cintura addominale profonda, allineamento lombare, Animal Flow e upper body sulle parallele. Zero dolore, low-impact, brucia-grassi.</p>
+    <div class="meta">
+      <span>≈ 35 min</span><span>3 fasi</span><span>Low-impact</span>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-main-start">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Avvia sessione
+    </button>
+  </div>
+</div>
+
+<!-- 2. PREPARATI (pre-lettura) -->
+<div id="screen-preread" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="dot"></i><span id="preread-block">Fase</span></span>
+    <span class="s-count" id="preread-count">0 / 0</span>
+  </div>
+  <h2 class="ex-title" id="preread-name">Esercizio</h2>
+  <div class="ref" id="preread-ref" hidden></div>
+  <ol class="steps" id="preread-steps"></ol>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog"  id="preread-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="preread-timer">10</div>
+      <div class="dose" id="preread-dose">Preparati</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-preread-skip">Salta attesa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- 3. ESERCIZIO -->
+<div id="screen-exercise" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="dot"></i><span id="ex-block">Blocco</span></span>
+    <span class="s-count" id="ex-count">0 / 0</span>
+  </div>
+  <h2 class="ex-title" id="ex-name">Esercizio</h2>
+  <ol class="steps" id="ex-steps"></ol>
+  <div class="cue" id="ex-cue" hidden></div>
+  <div class="dial" id="ex-dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog"  id="ex-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="ex-timer">00</div>
+      <div class="dose" id="ex-dose">Dose</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-ghost" id="btn-restart" aria-label="Ricomincia">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg>
+    </button>
+    <button class="btn btn-primary" id="btn-pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      Pausa
+    </button>
+    <button class="btn btn-primary" id="btn-resume" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Riprendi
+    </button>
+    <button class="btn btn-ghost" id="btn-skip" aria-label="Salta esercizio">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- 4. RECUPERO -->
+<div id="screen-rest" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="dot"></i><span>Recupero</span></span>
+    <span class="s-count" id="rest-count">0 / 0</span>
+  </div>
+  <h2 class="ex-title">Riposati</h2>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog"  id="rest-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="rest-timer">60</div>
+    </div>
+  </div>
+  <div class="rest-next" id="rest-next">Prossimo: —</div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-rest-skip">Salta pausa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- 5. FINE -->
+<div id="screen-end" class="screen">
+  <div class="hero">
+    <div class="end-check">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <div class="kicker">Grande Paolo</div>
+    <h1>Sessione<br>completata</h1>
+    <p>Ottimo lavoro su addome e allineamento. Stasera ricorda la routine pre-sonno anti-lordosi.</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-end-reset">Torna all'inizio</button>
+  </div>
+</div>
+
+<script>
+  "use strict";
+
+  /* ================= DATI ESERCIZI =================
+     steps: istruzioni imperative, brevi, glanceabili (il "come")
+     dose:  quanto (il carico)                              */
+  const EX = {
+    // FASE 1 — Riscaldamento
+    cervical:{ name:'Cervical CARs · Collo', time:45, dose:'3 giri per lato',
+      steps:['Spalle ferme e basse','Gira la testa lentissima','3 giri completi per lato'] },
+    polso:{ name:'Polso Flow', time:60, dose:'Sciogli i polsi',
+      steps:['A quattro zampe','Oscilla il peso sui polsi','Cambia direzione'] },
+    pelvic:{ name:'Pelvic Tilts · Sblocco bacino', time:60, dose:'12 ripetizioni lente',
+      steps:['A quattro zampe','Inarca la zona lombare','Poi appiattisci stringendo i glutei'] },
+    catcow:{ name:'Cat-Cow Globale', time:60, dose:'8 cicli fluidi',
+      steps:['Parti dal bacino','Onda fluida su tutta la colonna','Chiudi con il collo'] },
+    wgs:{ name:"World's Greatest Stretch", time:60, dose:'3 per lato',
+      steps:['Posizione push-up','Piede destro fuori dalla mano','Ruota braccio e petto al cielo','Poi cambia lato'] },
+
+    // BLOCCO A — Core & Flow
+    reversePlank:{ name:'Reverse Plank to Tuck', time:45, ref:'Reel LeoMoves · Foto 2', dose:'6 transizioni lente',
+      steps:['Reverse plank, faccia al soffitto','Corpo dritto, glutei di marmo','Scivola il bacino tra le braccia','Ginocchia al petto, non toccare terra'] },
+    sideKicks:{ name:'Side Kicks → Press Hold', time:45, ref:'Reel LeoMoves · Foto 3', dose:'4 calci per lato',
+      steps:['Posizione bear, ginocchia a 2 cm','Ruota e calcia una gamba di lato','Stacca la mano opposta','Torna al centro e spingi 2"'] },
+    plankSlider:{ name:'Plank Slider · Knee Tucks', time:45, dose:'8–10 scivolate lente',
+      steps:['In plank, calzini sotto i piedi','Scivola le ginocchia al petto','Ridistendi le gambe','Fermati prima che la schiena ceda'] },
+
+    // BLOCCO B — Upper body
+    dip:{ name:'Dip alle Parallele', time:60, dose:'6–8 ripetizioni',
+      steps:['Spalle basse, busto avanti','Scendi controllando in 3"','Fino a 90° di gomito','Risali spingendo forte'] },
+    row:{ name:'Inverted Row', time:60, dose:'8–10 ripetizioni',
+      steps:['Sospeso sotto le parallele','Tira il petto verso l\'alto','Chiudi forte le scapole','Pausa 1" in cima'] },
+
+    // BLOCCO C — Finisher cardio
+    squat:{ name:'Squat Bulgaro', time:60, dose:'10 per gamba',
+      steps:['Piede dietro sulla sedia','Discesa dritta e verticale','Ginocchio sopra il piede','Cambia gamba a metà'] },
+    bear:{ name:'Bear Crawl Dinamico', time:30, dose:'30" continui',
+      steps:['Posizione bear, ginocchia sollevate','4 passi avanti, 4 indietro','Muovi braccio e gamba opposti','Schiena ferma come un tavolo'] },
+    sliderFast:{ name:'Plank Slider Veloci', time:30, dose:'30" · max velocità',
+      steps:['In plank, calzini sotto i piedi','Ginocchia al petto esplosive','Ritmo continuo','Addome di pietra'] },
+
+    // FASE 3 — Defaticamento
+    child:{ name:"Child's Pose Attiva", time:90, dose:'Respira profondo',
+      steps:['Glutei sui talloni','Mani che camminano in avanti','Respira con il diaframma'] },
+    fold:{ name:'Forward Fold Passivo', time:60, dose:'Rilassa tutto',
+      steps:['In piedi, gambe morbide','Abbandona busto e braccia a terra','Rilascia collo e spalle'] },
+    shoulder:{ name:'Crossover Shoulder Stretch', time:60, dose:'30" per lato',
+      steps:['Braccio teso davanti al petto','Tira con l\'altro braccio','Allunga senza forzare'] },
+  };
+
+  const ex   = (block, key, extra={}) => ({ type:'ex', block, ...EX[key], ...extra });
+  const rest = (time=60) => ({ type:'rest', time });
+
+  const workoutData = [
+    ex('Fase 1 · Riscaldamento','cervical'),
+    ex('Fase 1 · Riscaldamento','polso'),
+    ex('Fase 1 · Riscaldamento','pelvic'),
+    ex('Fase 1 · Riscaldamento','catcow'),
+    ex('Fase 1 · Riscaldamento','wgs'),
+    rest(),
+
+    ex('Blocco A · Round 1/3','reversePlank'),
+    ex('Blocco A · Round 1/3','sideKicks'),
+    ex('Blocco A · Round 1/3','plankSlider'),
+    rest(),
+    ex('Blocco A · Round 2/3','reversePlank',{cue:'Concentrati sulla compressione'}),
+    ex('Blocco A · Round 2/3','sideKicks',{cue:'Spingi forte in Press Hold'}),
+    ex('Blocco A · Round 2/3','plankSlider',{cue:'Zero oscillazioni lombari'}),
+    rest(),
+    ex('Blocco A · Round 3/3','reversePlank',{cue:'Ultimo giro — addome di marmo'}),
+    ex('Blocco A · Round 3/3','sideKicks',{cue:'Tensione continua'}),
+    ex('Blocco A · Round 3/3','plankSlider',{cue:'Addome di marmo'}),
+    rest(),
+
+    ex('Blocco B · Upper 1/3','dip'),
+    rest(),
+    ex('Blocco B · Upper 1/3','row'),
+    rest(),
+    ex('Blocco B · Upper 2/3','dip',{cue:'Busto inclinato avanti ~15°'}),
+    rest(),
+    ex('Blocco B · Upper 2/3','row',{cue:'Controlla bene la discesa'}),
+    rest(),
+    ex('Blocco B · Upper 3/3','dip',{cue:'Ultima spinta'}),
+    rest(),
+    ex('Blocco B · Upper 3/3','row',{cue:'Ultima trazione'}),
+    rest(),
+
+    ex('Blocco C · Finisher 1/2','squat'),
+    ex('Blocco C · Finisher 1/2','bear'),
+    ex('Blocco C · Finisher 1/2','sliderFast'),
+    rest(),
+    ex('Blocco C · Finisher 2/2','squat',{cue:'Cambia gamba dopo 10 rep'}),
+    ex('Blocco C · Finisher 2/2','bear',{cue:'Tieni il ritmo, cuore a mille'}),
+    ex('Blocco C · Finisher 2/2','sliderFast',{cue:'Ultimo sforzo brucia-grassi'}),
+    rest(),
+
+    ex('Fase 3 · Defaticamento','child'),
+    ex('Fase 3 · Defaticamento','fold'),
+    ex('Fase 3 · Defaticamento','shoulder'),
+  ];
+
+  const totalEx = workoutData.filter(i => i.type === 'ex').length;
+  const countExUpTo = idx => workoutData.slice(0, idx).filter(i => i.type === 'ex').length;
+
+  /* ================= STATO & AUDIO ================= */
+  let currentIndex = 0;
+  let timer = null;
+  let timeLeft = 0;
+  let isPaused = false;
+  let wakeLock = null;
+
+  const synth = window.speechSynthesis;
+  function say(type){
+    if(!synth) return;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance();
+    u.lang = 'it-IT'; u.pitch = 1; u.rate = 1.2;
+    u.text = { prep:'Preparati.', start:'Via!', rest:'Pausa.', finish:'Grande Paolo, finito.' }[type] || '';
+    u.onstart = () => Music.duck(0.4);
+    u.onend   = () => Music.duck(1);
+    synth.speak(u);
+  }
+  const buzz = (p) => { try{ navigator.vibrate && navigator.vibrate(p); }catch(_){} };
+
+  async function requestWakeLock(){
+    try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(_){}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && wakeLock === null) requestWakeLock();
+  });
+
+  /* ================= DOM ================= */
+  const $ = id => document.getElementById(id);
+  const screens = {
+    start:$('screen-start'), preread:$('screen-preread'), exercise:$('screen-exercise'),
+    rest:$('screen-rest'), end:$('screen-end')
+  };
+  const sessionBar = $('session-bar'), sessionFill = $('session-fill');
+  const btnPause = $('btn-pause'), btnResume = $('btn-resume');
+  const RING_C = 2 * Math.PI * 54;
+
+  ['preread-ring','ex-ring','rest-ring'].forEach(id => { $(id).style.strokeDasharray = RING_C; });
+
+  /* ================= MUSICA DI SOTTOFONDO (Web Audio, generativa) =================
+     Loop AMRAP 124 BPM: kick 4-on-the-floor, hats, snare, basso saw, arpeggio
+     su una progressione vi–IV–I–V. Nessun file esterno, gira offline.            */
+  const Music = (() => {
+    const BPM = 124;
+    const step16 = 60 / BPM / 4;
+    const LOOKAHEAD = 0.10, TICK = 25;
+    const BASE_GAIN = 0.14;
+    const roots  = [45, 41, 48, 43];                 // A2 F2 C3 G2
+    const chords = [[57,60,64],[53,57,60],[48,55,60],[50,55,59]]; // Am F C G
+
+    let ctx=null, comp=null, master=null, noise=null;
+    let playing=false, on=true, duck=1, tickId=null, stopId=null;
+    let step=0, nextTime=0;
+
+    on = (typeof localStorage!=='undefined' && localStorage.getItem('clstncs-music')==='off') ? false : true;
+
+    const m2f = m => 440 * Math.pow(2, (m-69)/12);
+
+    function init(){
+      if(ctx) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      comp = ctx.createDynamicsCompressor();
+      comp.threshold.value=-16; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.2;
+      master = ctx.createGain(); master.gain.value=0.0001;
+      comp.connect(master); master.connect(ctx.destination);
+      const len = Math.floor(ctx.sampleRate*0.5);
+      noise = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    }
+
+    function kick(t){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine';
+      o.frequency.setValueAtTime(135,t);
+      o.frequency.exponentialRampToValueAtTime(48,t+0.11);
+      g.gain.setValueAtTime(0.9,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+      o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.18);
+    }
+    function hat(t,open){
+      const s=ctx.createBufferSource(); s.buffer=noise;
+      const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7500;
+      const g=ctx.createGain(); const dur=open?0.11:0.03;
+      g.gain.setValueAtTime(0.14,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      s.connect(hp); hp.connect(g); g.connect(comp); s.start(t); s.stop(t+dur+0.02);
+    }
+    function snare(t){
+      const s=ctx.createBufferSource(); s.buffer=noise;
+      const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=0.8;
+      const g=ctx.createGain();
+      g.gain.setValueAtTime(0.26,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+      s.connect(bp); bp.connect(g); g.connect(comp); s.start(t); s.stop(t+0.16);
+    }
+    function bass(t,midi,dur){
+      const o=ctx.createOscillator(), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+      o.type='sawtooth'; o.frequency.value=m2f(midi);
+      lp.type='lowpass'; lp.frequency.value=340; lp.Q.value=5;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.22,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      o.connect(lp); lp.connect(g); g.connect(comp); o.start(t); o.stop(t+dur+0.02);
+    }
+    function pluck(t,midi,dur){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='triangle'; o.frequency.value=m2f(midi);
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.linearRampToValueAtTime(0.07,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      o.connect(g); g.connect(comp); o.start(t); o.stop(t+dur+0.02);
+    }
+
+    function schedule(s,t){
+      const bar = Math.floor(s/16) % 4, i = s % 16, ch = chords[bar];
+      if(i%4===0) kick(t);
+      if(i===4 || i===12) snare(t);
+      if(i%2===0) hat(t, i%8===6);
+      if(i%2===0) bass(t, roots[bar], step16*1.9);
+      if(i%4===0) pluck(t, ch[(i/4)%ch.length]+12, step16*3.4);
+    }
+
+    function loop(){
+      while(nextTime < ctx.currentTime + LOOKAHEAD){
+        if(on) schedule(step, nextTime);
+        nextTime += step16; step++;
+      }
+    }
+
+    function applyGain(ramp=0.05){
+      if(!master) return;
+      const target = (on && playing) ? BASE_GAIN*duck : 0.0001;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(target, ctx.currentTime, ramp);
+    }
+
+    function syncBtn(){
+      const b = document.getElementById('btn-music');
+      if(!b) return;
+      b.classList.toggle('off', !on);
+      b.setAttribute('aria-pressed', String(on));
+    }
+
+    return {
+      start(){
+        init();
+        if(ctx.state==='suspended') ctx.resume();
+        clearTimeout(stopId);
+        if(!playing){ playing=true; step=0; nextTime=ctx.currentTime+0.08; tickId=setInterval(loop, TICK); }
+        applyGain(0.6); syncBtn();
+      },
+      fadeOut(){
+        playing=false; applyGain(0.4);
+        clearTimeout(stopId);
+        stopId=setTimeout(()=>{ clearInterval(tickId); tickId=null; }, 1800);
+      },
+      stop(){ playing=false; applyGain(0.2); clearInterval(tickId); tickId=null; },
+      toggle(){
+        on=!on;
+        try{ localStorage.setItem('clstncs-music', on?'on':'off'); }catch(_){}
+        applyGain(0.08); syncBtn();
+      },
+      duck(v){ duck=v; applyGain(0.12); },
+      sync: syncBtn
+    };
+  })();
+  Music.sync();
+  $('btn-music').addEventListener('click', () => Music.toggle());
+
+  /* ================= HELPERS ================= */
+  function showScreen(id){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[id].classList.add('active');
+    const timed = (id === 'preread' || id === 'exercise' || id === 'rest');
+    sessionBar.classList.toggle('on', timed);
+    if(timed){
+      const phase = id === 'preread' ? 'var(--prep)' : id === 'exercise' ? 'var(--active)' : 'var(--rest)';
+      sessionFill.style.background = phase;
+      sessionFill.style.width = Math.round((currentIndex / workoutData.length) * 100) + '%';
+    }
+  }
+
+  const fmt = s => s >= 60 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}` : String(s).padStart(2,'0');
+
+  function primeRing(ring){
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = 0;
+    void ring.getBoundingClientRect();
+    ring.style.transition = '';
+  }
+  function setDial(numEl, ring, left, total){
+    numEl.textContent = fmt(left);
+    const f = Math.max(0, Math.min(1, left / total));
+    ring.style.strokeDashoffset = RING_C * (1 - f);
+  }
+
+  function renderSteps(ol, steps){
+    ol.innerHTML = '';
+    steps.forEach(t => { const li = document.createElement('li'); li.textContent = t; ol.appendChild(li); });
+  }
+
+  function setHead(countEl, idx){
+    countEl.textContent = `${countExUpTo(idx)} / ${totalEx}`;
+  }
+
+  /* ================= SCHERMATE A TEMPO ================= */
+
+  // Preparati (10")
+  function startPreread(item){
+    currentIndex++;
+    showScreen('preread');
+    $('preread-block').textContent = item.block;
+    $('preread-name').textContent  = item.name;
+    renderSteps($('preread-steps'), item.steps);
+    const refEl = $('preread-ref');
+    if(item.ref){ refEl.hidden = false; refEl.textContent = '↗ ' + item.ref; } else refEl.hidden = true;
+    $('preread-dose').textContent = item.dose;
+    setHead($('preread-count'), currentIndex);
+
+    timeLeft = 10;
+    primeRing($('preread-ring'));
+    setDial($('preread-timer'), $('preread-ring'), timeLeft, 10);
+    say('prep');
+
+    clearInterval(timer);
+    timer = setInterval(() => {
+      timeLeft--;
+      setDial($('preread-timer'), $('preread-ring'), Math.max(0,timeLeft), 10);
+      if(timeLeft <= 0){ clearInterval(timer); startExercise(item); }
+    }, 1000);
+  }
+
+  // Esercizio attivo
+  function startExercise(item){
+    isPaused = false;
+    showScreen('exercise');
+    btnPause.hidden = false; btnResume.hidden = true;
+
+    $('ex-block').textContent = item.block;
+    $('ex-name').textContent  = item.name;
+    renderSteps($('ex-steps'), item.steps);
+    const cueEl = $('ex-cue');
+    if(item.cue){ cueEl.hidden = false; cueEl.textContent = item.cue; } else cueEl.hidden = true;
+    $('ex-dose').textContent = item.dose;
+    setHead($('ex-count'), currentIndex);
+    $('ex-dial').classList.remove('ending');
+
+    timeLeft = item.time;
+    primeRing($('ex-ring'));
+    setDial($('ex-timer'), $('ex-ring'), timeLeft, item.time);
+    say('start'); buzz(60);
+
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if(isPaused) return;
+      timeLeft--;
+      setDial($('ex-timer'), $('ex-ring'), Math.max(0,timeLeft), item.time);
+      $('ex-dial').classList.toggle('ending', timeLeft <= 3 && timeLeft > 0);
+      if(timeLeft <= 0){ clearInterval(timer); $('ex-dial').classList.remove('ending'); nextStep(); }
+    }, 1000);
+  }
+
+  // Recupero
+  function startRest(item){
+    currentIndex++;
+    showScreen('rest');
+    setHead($('rest-count'), currentIndex);
+
+    const next = workoutData[currentIndex];
+    $('rest-next').innerHTML = next
+      ? `Prossimo: <b>${next.name}</b><br>${next.dose}`
+      : 'Ultimo sforzo, ci sei!';
+
+    timeLeft = item.time;
+    primeRing($('rest-ring'));
+    setDial($('rest-timer'), $('rest-ring'), timeLeft, item.time);
+    say('rest'); buzz(30);
+
+    clearInterval(timer);
+    timer = setInterval(() => {
+      timeLeft--;
+      setDial($('rest-timer'), $('rest-ring'), Math.max(0,timeLeft), item.time);
+      if(timeLeft <= 0){ clearInterval(timer); nextStep(); }
+    }, 1000);
+  }
+
+  function nextStep(){
+    if(currentIndex >= workoutData.length){
+      showScreen('end'); sessionBar.classList.remove('on');
+      say('finish'); buzz([80,60,80,60,160]); Music.fadeOut();
+      clearInterval(timer);
+      return;
+    }
+    const item = workoutData[currentIndex];
+    if(item.type === 'ex') startPreread(item);
+    else startRest(item);
+  }
+
+  /* ================= CONTROLLI ================= */
+  $('btn-main-start').addEventListener('click', () => {
+    requestWakeLock();
+    if(synth) synth.speak(new SpeechSynthesisUtterance(''));  // sblocca audio (gesto utente)
+    Music.start();                                            // avvia la musica (gesto utente)
+    currentIndex = 0;
+    nextStep();
+  });
+
+  $('btn-preread-skip').addEventListener('click', () => {
+    clearInterval(timer);
+    startExercise(workoutData[currentIndex - 1]);
+  });
+
+  $('btn-rest-skip').addEventListener('click', () => { clearInterval(timer); nextStep(); });
+
+  btnPause.addEventListener('click', () => {
+    isPaused = true; btnPause.hidden = true; btnResume.hidden = false;
+    $('ex-dial').classList.remove('ending');
+  });
+  btnResume.addEventListener('click', () => {
+    isPaused = false; btnPause.hidden = false; btnResume.hidden = true;
+  });
+
+  $('btn-restart').addEventListener('click', () => {
+    clearInterval(timer);
+    currentIndex--;
+    startExercise(workoutData[currentIndex]);
+  });
+
+  $('btn-skip').addEventListener('click', () => { clearInterval(timer); nextStep(); });
+
+  $('btn-end-reset').addEventListener('click', () => {
+    showScreen('start'); sessionBar.classList.remove('on'); currentIndex = 0; Music.stop();
+  });
+</script>
+</body>
+</html>
