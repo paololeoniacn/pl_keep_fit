@@ -1,0 +1,432 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Allenamento Paolo</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #00e676;
+            --warning-color: #ff9100;
+            --rest-color: #2979ff;
+            --btn-bg: #333;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Schermate */
+        .screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+            position: absolute;
+            width: 100%;
+            top: 0; left: 0;
+        }
+
+        .screen.active { display: flex; }
+
+        /* Componenti UI */
+        h1 { font-size: 1.8rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .description { font-size: 1.1rem; line-height: 1.5; margin-bottom: 30px; max-width: 600px; color: #aaa; }
+        .block-title { color: var(--accent-color); font-weight: bold; margin-bottom: 5px; font-size: 1rem;}
+
+        /* Timer GIGANTE */
+        .timer-display {
+            font-size: 25vh;
+            font-weight: 800;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 20px 0;
+            line-height: 1;
+        }
+
+        #screen-preread .timer-display { color: var(--warning-color); }
+        #screen-exercise .timer-display { color: var(--accent-color); }
+        #screen-rest .timer-display { color: var(--rest-color); }
+
+        /* Reference Dynamic */
+        .flow-reference {
+            margin-top: 10px;
+            font-style: italic;
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Controlli */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+            margin-bottom: 30px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background-color: var(--btn-bg);
+            color: var(--text-color);
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:active { background-color: #444; }
+        button#btn-start { background-color: var(--accent-color); color: #121212; }
+        button#btn-pause { background-color: var(--warning-color); color: #121212;}
+        button#btn-resume { background-color: var(--accent-color); color: #121212; display: none;}
+        button.rest-btn { background-color: var(--btn-bg); color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Schermata Overview (Start) -->
+    <div id="screen-start" class="screen active">
+        <h1>Allenamento Paolo</h1>
+        <div class="block-title">Settimana 1: Asciuga & Allinea</div>
+        <div class="description">
+            Cintura addominale profonda, allineamento lombare, Animal Flow e Upper Body sulle parallele.<br><br>
+            Focus: No dolore, elasticità, resistenza, fatica brucia-grassi.<br>
+            Impatti: Basso (Low-Impact).
+        </div>
+        <div class="controls">
+            <button id="btn-main-start" style="background-color: #00e676; color: #121212;">AVVIA SESSIONE</button>
+        </div>
+    </div>
+
+    <!-- 2. Schermata Lettura Veloce (10 secondi pre-esercizio) -->
+    <div id="screen-preread" class="screen">
+        <div id="preread-block" class="block-title"></div>
+        <h1 id="preread-name">Nome Esercizio</h1>
+        <div id="preread-desc" class="description">Descrizione breve dell'esecuzione.</div>
+        <div id="preread-flow" class="flow-reference" style="display:none;">Vedi Reel LeoMoves</div>
+        <div class="timer-display" id="preread-timer">10</div>
+        <div class="controls">
+            <button id="btn-preread-skip">SALTA ATTESA</button>
+        </div>
+    </div>
+
+    <!-- 3. Schermata Esercizio (Tempo Attivo) -->
+    <div id="screen-exercise" class="screen">
+        <div id="ex-block" class="block-title"></div>
+        <h1 id="ex-name">Nome Esercizio</h1>
+        <div class="timer-display" id="ex-timer">00</div>
+        <div class="description" id="ex-rep-info">Dose/Ripetizioni</div>
+        <div class="controls">
+            <button id="btn-pause">PAUSA</button>
+            <button id="btn-resume">RIPRENDI</button>
+            <button id="btn-restart">RICOMINCIA</button>
+        </div>
+    </div>
+
+    <!-- 4. Schermata Pausa (Recupero) -->
+    <div id="screen-rest" class="screen">
+        <div class="block-title">RECUPERO</div>
+        <h1>Riposati</h1>
+        <div class="timer-display" id="rest-timer">60</div>
+        <div class="description" id="rest-next">Prossimo: Nome Esercizio</div>
+        <div class="controls">
+            <button id="btn-rest-skip" class="rest-btn">SALTA PAUSA</button>
+        </div>
+    </div>
+
+    <!-- 5. Schermata Fine -->
+    <div id="screen-end" class="screen">
+        <h1>SESSIONE COMPLETATA!</h1>
+        <div class="block-title">Grande Paolo.</div>
+        <div class="description">Ottimo lavoro per l'addome e l'allineamento. Ricorda la routine pre-sonno stasera.</div>
+        <div class="controls">
+            <button id="btn-end-reset">TORNA ALL'INIZIO</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAZIONE SESSIONE ---
+        const workoutData = [
+            // RISCALDAMENTO (FASE 1)
+            { type: 'ex', block: 'FASE 1: RISCALDAMENTO', name: 'Cervical CARs (Collo)', desc: '3 giri lentissimi per lato. Spalle ferme.', dose: 'Gira lento', flow: false, time: 45 },
+            { type: 'ex', block: 'FASE 1', name: 'Polso Flow', desc: 'A quattro zampe, oscilla peso sui polsi.', dose: 'Sciogli i polsi', flow: false, time: 60 },
+            { type: 'ex', block: 'FASE 1', name: 'Pelvic Tilts (Sblocco Bacino)', desc: 'Isola il movimento lombare: inarca / appiattisci.', dose: '12 ripetizioni lente', flow: false, time: 60 },
+            { type: 'ex', block: 'FASE 1', name: 'Cat-Cow Globale', desc: 'Un onda fluida per tutta la colonna.', dose: '8 cicli completi', flow: false, time: 60 },
+            { type: 'ex', block: 'FASE 1', name: 'World\'s Greatest Stretch', desc: 'Affondo profondo + rotazione toracica.', dose: '3 x lato', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+
+            // BLOCCO A (3 ROUND)
+            // Round 1
+            { type: 'ex', block: 'BLOCCO A: ROUND 1/3', name: 'Reverse Plank to Tuck', desc: 'Reverse Plank -> Scivola -> Compressione addominale.', dose: '6 transizioni controllate', flow: 'FOTO 2', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Side Kicks to Press Hold', desc: 'Bear Crawl -> Calcia lato -> Torna in Press Hold (2").', dose: '4 calci per lato', flow: 'FOTO 3', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Plank Slider (Knee Tucks)', desc: 'In plank su stracci/calzini. Ginocchia al petto.', dose: '8–10 scivolate lente', flow: false, time: 45 },
+            { type: 'rest', time: 60 },
+            // Round 2
+            { type: 'ex', block: 'BLOCCO A: ROUND 2/3', name: 'Reverse Plank to Tuck', desc: 'Concentrati sulla compressione.', dose: '6 transizioni controllate', flow: 'FOTO 2', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Side Kicks to Press Hold', desc: 'Spingi forte pavimento in Press Hold.', dose: '4 calci per lato', flow: 'FOTO 3', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Plank Slider (Knee Tucks)', desc: 'Zero oscillazioni lombari.', dose: '8–10 scivolate lente', flow: false, time: 45 },
+            { type: 'rest', time: 60 },
+            // Round 3
+            { type: 'ex', block: 'BLOCCO A: ROUND 3/3', name: 'Reverse Plank to Tuck', desc: 'Ultimo giro addome.', dose: '6 transizioni controllate', flow: 'FOTO 2', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Side Kicks to Press Hold', desc: 'Tensione continua.', dose: '4 calci per lato', flow: 'FOTO 3', time: 45 },
+            { type: 'ex', block: 'BLOCCO A', name: 'Plank Slider (Knee Tucks)', desc: 'Addome di marmo.', dose: '8–10 scivolate lente', flow: false, time: 45 },
+            { type: 'rest', time: 60 },
+
+            // BLOCCO B (3 ROUND)
+            // Round 1
+            { type: 'ex', block: 'BLOCCO B: UPPER BODY (1/3)', name: 'Dip alle Parallele', desc: 'Spalle depresse, discesa 3", gomiti stretti.', dose: '6–8 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+            { type: 'ex', block: 'BLOCCO B', name: 'Inverted Row', desc: 'Chiudi le scapole, pausa 1" in cima.', dose: '8–10 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+            // Round 2
+            { type: 'ex', block: 'BLOCCO B: UPPER BODY (2/3)', name: 'Dip alle Parallele', desc: 'Busto inclinato avanti (15°).', dose: '6–8 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+            { type: 'ex', block: 'BLOCCO B', name: 'Inverted Row', desc: 'Controlla la discesa.', dose: '8–10 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+            // Round 3
+            { type: 'ex', block: 'BLOCCO B: UPPER BODY (3/3)', name: 'Dip alle Parallele', desc: 'Ultima spinta.', dose: '6–8 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+            { type: 'ex', block: 'BLOCCO B', name: 'Inverted Row', desc: 'Ultima trazione.', dose: '8–10 ripetizioni', flow: false, time: 60 },
+            { type: 'rest', time: 60 },
+
+            // BLOCCO C (2 ROUND)
+            // Round 1
+            { type: 'ex', block: 'BLOCCO C: FINISHER CARDIO (1/2)', name: 'Squat Bulgaro', desc: 'Piede su sedia, discesa verticale.', dose: '10 x gamba', flow: false, time: 60 },
+            { type: 'ex', block: 'BLOCCO C (Cardio)', name: 'Bear Crawl Dinamico', desc: '4 passi avanti/indietro. Schiena ferma.', dose: 'Velocità controllata', flow: false, time: 30 },
+            { type: 'ex', block: 'BLOCCO C (Cardio)', name: 'Plank Slider Veloci', desc: 'Mountain climber su stracci. Esplosivo.', dose: 'Max velocità (con controllo)', flow: false, time: 30 },
+            { type: 'rest', time: 60 },
+            // Round 2
+            { type: 'ex', block: 'BLOCCO C: FINISHER CARDIO (2/2)', name: 'Squat Bulgaro', desc: 'Cambia gamba dopo 10 rep.', dose: '10 x gamba', flow: false, time: 60 },
+            { type: 'ex', block: 'BLOCCO C (Cardio)', name: 'Bear Crawl Dinamico', desc: 'Cuore a mille, schiena ferma.', dose: 'Tieni il ritmo', flow: false, time: 30 },
+            { type: 'ex', block: 'BLOCCO C (Cardio)', name: 'Plank Slider Veloci', desc: 'Ultimo sforzo brucia-grassi.', dose: 'Max velocità', flow: false, time: 30 },
+            { type: 'rest', time: 60 },
+
+            // FASE 3: DEFATICAMENTO
+            { type: 'ex', block: 'FASE 3: DEFATICAMENTO', name: 'Child\'s Pose Attiva', desc: 'Glutei su talloni, respira diaframmatico.', dose: 'Respira profondo', flow: false, time: 90 },
+            { type: 'ex', block: 'FASE 3', name: 'Forward Fold Passivo', desc: 'Abbandona busto/braccia avanti (gambe flesse).', dose: 'Rilassa tutto', flow: false, time: 60 },
+            { type: 'ex', block: 'FASE 3', name: 'Crossover Shoulder Stretch', desc: 'Tiraggio spalla laterale (30" x lato).', dose: 'Allunga le spalle', flow: false, time: 60 },
+        ];
+
+        // --- GESTIONE STATO & AUDIO ---
+        let currentIndex = 0;
+        let timer = null;
+        let timeLeft = 0;
+        let isPaused = false;
+        let inPreread = false;
+
+        const synth = window.speechSynthesis;
+        function playSound(type) {
+            if (!synth) return;
+            synth.cancel(); 
+            let utterance = new SpeechSynthesisUtterance();
+            utterance.lang = 'it-IT';
+            utterance.pitch = 1;
+            utterance.rate = 1.2; 
+
+            if (type === 'prep') utterance.text = "Preparati.";
+            if (type === 'start') utterance.text = "Via!";
+            if (type === 'rest') utterance.text = "Pausa.";
+            if (type === 'finish') utterance.text = "Grande Paolo, finito.";
+            
+            synth.speak(utterance);
+        }
+
+        // --- DOM ELEMENTS ---
+        const screens = {
+            start: document.getElementById('screen-start'),
+            preread: document.getElementById('screen-preread'),
+            exercise: document.getElementById('screen-exercise'),
+            rest: document.getElementById('screen-rest'),
+            end: document.getElementById('screen-end')
+        };
+
+        const preread = { block: document.getElementById('preread-block'), name: document.getElementById('preread-name'), desc: document.getElementById('preread-desc'), flow: document.getElementById('preread-flow'), timer: document.getElementById('preread-timer') };
+        const exercise = { block: document.getElementById('ex-block'), name: document.getElementById('ex-name'), repInfo: document.getElementById('ex-rep-info'), timer: document.getElementById('ex-timer') };
+        const rest = { timer: document.getElementById('rest-timer'), next: document.getElementById('rest-next') };
+        const btnPause = document.getElementById('btn-pause');
+        const btnResume = document.getElementById('btn-resume');
+
+        // --- LOGICA CORE ---
+
+        function showScreen(screenId) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenId].classList.add('active');
+        }
+
+        function updateTimerDisplay(el, seconds) {
+            let m = Math.floor(seconds / 60);
+            let s = seconds % 60;
+            // Se maggiore di 60, mostra MM:SS, altrimenti solo SS
+            el.textContent = seconds >= 60 ? `${m}:${s < 10 ? '0'+s : s}` : (s < 10 ? `0${s}` : s);
+        }
+
+        // 1. Schermata Lettura Veloce (10" pre-esercizio)
+        function startPreread(item) {
+            inPreread = true;
+            currentIndex++; 
+            showScreen('preread');
+            preread.block.textContent = item.block;
+            preread.name.textContent = item.name;
+            preread.desc.textContent = item.desc;
+            preread.flow.style.display = item.flow ? 'block' : 'none';
+            preread.flow.textContent = item.flow;
+            
+            timeLeft = 10; 
+            updateTimerDisplay(preread.timer, timeLeft);
+            playSound('prep');
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(preread.timer, timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    startExercise(item); 
+                }
+            }, 1000);
+        }
+
+        // 2. Schermata Esercizio (Tempo Attivo)
+        function startExercise(item) {
+            inPreread = false;
+            isPaused = false;
+            showScreen('exercise');
+            btnPause.style.display = 'block';
+            btnResume.style.display = 'none';
+
+            exercise.block.textContent = item.block;
+            exercise.name.textContent = item.name;
+            exercise.repInfo.textContent = item.dose;
+            
+            timeLeft = item.time;
+            updateTimerDisplay(exercise.timer, timeLeft);
+            playSound('start');
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                if (!isPaused) {
+                    timeLeft--;
+                    updateTimerDisplay(exercise.timer, timeLeft);
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        nextStep();
+                    }
+                }
+            }, 1000);
+        }
+
+        // 3. Schermata Pausa (Recupero)
+        function startRest(item) {
+            inPreread = false;
+            currentIndex++;
+            showScreen('rest');
+            
+            timeLeft = item.time;
+            updateTimerDisplay(rest.timer, timeLeft);
+            
+            if (workoutData[currentIndex]) {
+                rest.next.textContent = "Prossimo: " + workoutData[currentIndex].name;
+            } else {
+                rest.next.textContent = "Ultimo sforzo!";
+            }
+            playSound('rest');
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(rest.timer, timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextStep();
+                }
+            }, 1000);
+        }
+
+        function nextStep() {
+            if (currentIndex >= workoutData.length) {
+                showScreen('end');
+                playSound('finish');
+                clearInterval(timer);
+                return;
+            }
+            let item = workoutData[currentIndex];
+            if (item.type === 'ex') {
+                startPreread(item); 
+            } else if (item.type === 'rest') {
+                startRest(item);
+            }
+        }
+
+        // --- CONTROLLI UTENTE ---
+
+        document.getElementById('btn-main-start').addEventListener('click', () => {
+            // Wake Lock per evitare spegnimento schermo
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(console.error);
+            }
+            // Richiesta permesso audio su iOS/Android (necessita interazione utente)
+            if(synth) synth.speak(new SpeechSynthesisUtterance("")); 
+            
+            currentIndex = 0;
+            nextStep();
+        });
+
+        document.getElementById('btn-preread-skip').addEventListener('click', () => {
+            clearInterval(timer);
+            let item = workoutData[currentIndex - 1]; 
+            startExercise(item);
+        });
+
+        document.getElementById('btn-rest-skip').addEventListener('click', () => {
+            clearInterval(timer);
+            nextStep();
+        });
+
+        btnPause.addEventListener('click', () => {
+            isPaused = true;
+            btnPause.style.display = 'none';
+            btnResume.style.display = 'block';
+        });
+
+        btnResume.addEventListener('click', () => {
+            isPaused = false;
+            btnPause.style.display = 'block';
+            btnResume.style.display = 'none';
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            clearInterval(timer);
+            currentIndex--; 
+            let item = workoutData[currentIndex];
+            startExercise(item); 
+        });
+
+        document.getElementById('btn-end-reset').addEventListener('click', () => {
+            showScreen('start');
+            currentIndex = 0;
+        });
+    </script>
+</body>
+</html>
