@@ -61,6 +61,8 @@
 
         #screen-preread .timer-display { color: var(--warning-color); }
         #screen-exercise .timer-display { color: var(--accent-color); }
+        #ex-desc { margin-bottom: 10px; }
+        #ex-rep-info { color: var(--accent-color); font-weight: bold; }
         #screen-rest .timer-display { color: var(--rest-color); }
 
         /* Reference Dynamic */
@@ -137,11 +139,13 @@
         <div id="ex-block" class="block-title"></div>
         <h1 id="ex-name">Nome Esercizio</h1>
         <div class="timer-display" id="ex-timer">00</div>
+        <div class="description" id="ex-desc">Descrizione esecuzione.</div>
         <div class="description" id="ex-rep-info">Dose/Ripetizioni</div>
         <div class="controls">
             <button id="btn-pause">PAUSA</button>
             <button id="btn-resume">RIPRENDI</button>
             <button id="btn-restart">RICOMINCIA</button>
+            <button id="btn-skip">SALTA</button>
         </div>
     </div>
 
@@ -263,7 +267,7 @@
         };
 
         const preread = { block: document.getElementById('preread-block'), name: document.getElementById('preread-name'), desc: document.getElementById('preread-desc'), flow: document.getElementById('preread-flow'), timer: document.getElementById('preread-timer') };
-        const exercise = { block: document.getElementById('ex-block'), name: document.getElementById('ex-name'), repInfo: document.getElementById('ex-rep-info'), timer: document.getElementById('ex-timer') };
+        const exercise = { block: document.getElementById('ex-block'), name: document.getElementById('ex-name'), desc: document.getElementById('ex-desc'), repInfo: document.getElementById('ex-rep-info'), timer: document.getElementById('ex-timer') };
         const rest = { timer: document.getElementById('rest-timer'), next: document.getElementById('rest-next') };
         const btnPause = document.getElementById('btn-pause');
         const btnResume = document.getElementById('btn-resume');
@@ -318,6 +322,7 @@
 
             exercise.block.textContent = item.block;
             exercise.name.textContent = item.name;
+            exercise.desc.textContent = item.desc;
             exercise.repInfo.textContent = item.dose;
             
             timeLeft = item.time;
@@ -420,7 +425,12 @@
             clearInterval(timer);
             currentIndex--; 
             let item = workoutData[currentIndex];
-            startExercise(item); 
+            startExercise(item);
+        });
+
+        document.getElementById('btn-skip').addEventListener('click', () => {
+            clearInterval(timer);
+            nextStep();
         });
 
         document.getElementById('btn-end-reset').addEventListener('click', () => {
