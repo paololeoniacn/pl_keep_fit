@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e0f12">
+<title>BARE · Allenamento Paolo</title>
+<style>
+:root{
+  --bg:        oklch(0.155 0.006 260);
+  --surface:   oklch(0.205 0.008 260);
+  --surface-2: oklch(0.255 0.009 260);
+  --line:      oklch(0.30  0.010 260);
+  --ink:       oklch(0.975 0     0);
+  --muted:     oklch(0.74  0.012 260);
+  --faint:     oklch(0.60  0.012 260);
+
+  --w1:   oklch(0.855 0.205 156);   /* verde */
+  --w2:   oklch(0.72  0.205  32);   /* arancio-rosso */
+  --w3:   oklch(0.68  0.135 295);   /* lavanda/notte */
+  --prep: oklch(0.78  0.165  66);
+  --rest: oklch(0.68  0.165 255);
+  --phase: var(--w1);
+
+  --r:    16px;
+  --ease: cubic-bezier(0.22,1,0.36,1);
+  --z-fixed: 50; --z-bar: 40;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--ink);
+  min-height:100dvh; overflow:hidden;
+  -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Schermate ── */
+.screen{
+  position:fixed; inset:0; display:none; flex-direction:column;
+  /* align-items:center OMESSO: rompe overflow-y scroll su mobile.
+     I figli si centrano con margin:auto (vedere .screen > *) */
+  padding:
+    max(calc(env(safe-area-inset-top) + 3.6rem), 4rem)   /* top: sopra i pulsanti fissi */
+    1.25rem
+    max(calc(env(safe-area-inset-bottom) + 1rem), 1.4rem);
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.screen.active{ display:flex; animation:fadeUp .28s var(--ease); }
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+
+/* Tutti i figli diretti: larghezza piena, centrati orizzontalmente, non si schiacciano */
+.screen > *{
+  width:100%; max-width:34rem;
+  margin-left:auto; margin-right:auto;
+  flex-shrink:0;
+}
+/* Eccezioni max-width più strette */
+.screen > .steps,
+.screen > .cue,
+.screen > .w2-circuit{ max-width:32rem; }
+/* Home: header più aria sopra (nessun pulsante fisso) */
+#s-home{ padding-top:max(calc(env(safe-area-inset-top) + 1.8rem), 2rem); }
+
+/* ── Pulsanti globali fissi ── */
+.g-btn{
+  position:fixed; top:calc(env(safe-area-inset-top)+.5rem);
+  z-index:var(--z-fixed); width:44px; height:44px; border-radius:50%;
+  display:none; place-items:center;
+  background:color-mix(in oklch,var(--surface) 85%,transparent);
+  border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  color:var(--muted); cursor:pointer;
+  transition:color .18s var(--ease),transform .12s var(--ease);
+}
+.g-btn:active{ transform:scale(.92); }
+.g-btn svg{ width:20px; height:20px; }
+.g-btn.visible{ display:grid; }
+#btn-back{ left:.75rem; }
+#btn-music{ right:.75rem; }
+#btn-music .i-off{ display:none; }
+#btn-music.muted{ color:var(--faint); }
+#btn-music.muted .i-on{ display:none; }
+#btn-music.muted .i-off{ display:block; }
+
+/* ── Barra progresso sessione ── */
+#session-bar{
+  position:fixed; top:0; left:0; right:0; height:3px;
+  background:var(--surface-2); z-index:var(--z-bar);
+  opacity:0; transition:opacity .3s var(--ease);
+}
+#session-bar.on{ opacity:1; }
+#session-fill{
+  height:100%; width:0%;
+  border-radius:0 2px 2px 0;
+  transition:width .65s var(--ease), background-color .35s var(--ease);
+}
+
+/* ═══════════════════════════════════════
+   HOME
+   ═══════════════════════════════════════ */
+.home-hd{ width:100%; max-width:34rem; margin-bottom:1.5rem; }
+.home-eyebrow{
+  font-size:.72rem; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:.5rem;
+}
+.home-h1{
+  font-size:clamp(1.9rem,8.5vw,2.6rem);
+  font-weight:850; letter-spacing:-.03em; line-height:1.02;
+}
+
+.wod-cards{ width:100%; max-width:34rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
+
+.wod-card{
+  position:relative; background:var(--surface);
+  border:1px solid var(--line); border-radius:20px;
+  padding:1.4rem 1.4rem 1.3rem;
+  cursor:pointer; text-align:left; overflow:hidden;
+  transition:transform .13s var(--ease), border-color .18s var(--ease);
+}
+.wod-card:active{ transform:scale(.985); }
+.wod-card::after{
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  background:color-mix(in oklch,var(--c) 0%,transparent);
+  transition:background-color .2s var(--ease);
+  pointer-events:none;
+}
+.wod-card:active::after{ background:color-mix(in oklch,var(--c) 8%,transparent); }
+
+.wod-num{
+  font-size:.72rem; font-weight:800; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--c);
+  display:flex; align-items:center; gap:.45rem; margin-bottom:.7rem;
+}
+.wod-num::before{
+  content:''; width:.45rem; height:.45rem; border-radius:50%;
+  background:var(--c); flex:none;
+}
+.wod-name{
+  font-size:clamp(1.25rem,5.5vw,1.65rem);
+  font-weight:800; letter-spacing:-.025em; line-height:1.05; margin-bottom:.45rem;
+}
+.wod-sub{ font-size:.94rem; line-height:1.4; color:var(--muted); margin-bottom:.95rem; }
+.wod-tags{ display:flex; flex-wrap:wrap; gap:.4rem; }
+.tag{
+  font-size:.74rem; font-weight:650;
+  background:var(--surface-2); border:1px solid var(--line);
+  color:var(--ink); padding:.28rem .65rem; border-radius:999px;
+}
+.tag-accent{
+  color:var(--c);
+  background:color-mix(in oklch,var(--c) 13%,transparent);
+  border-color:color-mix(in oklch,var(--c) 32%,transparent);
+}
+.wod-arrow{
+  position:absolute; right:1.2rem; bottom:1.3rem;
+  color:var(--c); font-size:1.35rem; font-weight:300; opacity:.65;
+}
+
+/* ═══════════════════════════════════════
+   COMPONENTI WORKOUT CONDIVISI
+   ═══════════════════════════════════════ */
+.s-head{
+  width:100%; max-width:34rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  padding-left:2.75rem; padding-right:2.75rem;
+}
+.s-phase{ color:var(--phase); display:inline-flex; align-items:center; gap:.5rem; min-width:0; }
+.s-dot{ width:.45rem; height:.45rem; border-radius:50%; background:var(--phase); flex:none; }
+.s-phase span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.s-count{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
+
+.ex-title{
+  width:100%; max-width:34rem; margin-top:.8rem;
+  font-size:clamp(1.55rem,6.5vw,2.1rem);
+  font-weight:800; letter-spacing:-.025em; line-height:1.05; text-wrap:balance;
+}
+.steps{
+  list-style:none; counter-reset:s;
+  width:100%; max-width:32rem; margin-top:.9rem;
+  display:flex; flex-direction:column; gap:.45rem; text-align:left;
+}
+.steps li{
+  counter-increment:s; display:flex; gap:.7rem; align-items:flex-start;
+  font-size:clamp(.94rem,3.8vw,1.07rem); line-height:1.28;
+}
+.steps li::before{
+  content:counter(s); flex:none;
+  width:1.55em; height:1.55em; margin-top:.05em;
+  display:grid; place-content:center;
+  font-size:.78em; font-weight:800;
+  color:var(--phase);
+  background:color-mix(in oklch,var(--phase) 15%,transparent);
+  border-radius:50%;
+}
+.cue{
+  width:100%; max-width:32rem; margin-top:.75rem;
+  display:flex; align-items:center; gap:.55rem;
+  font-size:.94rem; font-weight:650; line-height:1.25;
+  text-align:left; color:var(--phase);
+  background:color-mix(in oklch,var(--phase) 13%,transparent);
+  border-radius:12px; padding:.55rem .8rem;
+}
+.cue::before{ content:'▸'; font-weight:900; }
+
+/* Quadrante timer */
+.dial{
+  position:relative; margin:auto; /* centra orizzontalmente E spinge verticalmente */
+  width:clamp(180px,38vh,290px); aspect-ratio:1;
+  display:grid; place-items:center; flex:none;
+  align-self:center; /* centra sull'asse trasversale senza align-items sul padre */
+  max-width:none; /* annulla la regola .screen > * */
+}
+.dial::before{
+  content:''; position:absolute; inset:-14%;
+  background:radial-gradient(closest-side,
+    color-mix(in oklch,var(--phase) 22%,transparent),transparent 72%);
+  filter:blur(6px); z-index:-1; opacity:.9;
+}
+.ring{ width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+.ring-track{ fill:none; stroke:color-mix(in oklch,var(--phase) 20%,transparent); stroke-width:6.5; }
+.ring-prog{
+  fill:none; stroke:var(--phase); stroke-width:6.5; stroke-linecap:round;
+  transition:stroke-dashoffset .95s linear;
+  filter:drop-shadow(0 0 6px color-mix(in oklch,var(--phase) 55%,transparent));
+}
+.dial-center{ position:absolute; inset:0; display:grid; place-content:center; gap:.35rem; }
+.dial-num{
+  font-size:clamp(3.2rem,14vw,4.8rem); font-weight:800;
+  font-variant-numeric:tabular-nums; letter-spacing:-.04em; line-height:1;
+  color:var(--phase);
+}
+.dose{
+  justify-self:center;
+  font-size:.82rem; font-weight:700; letter-spacing:.02em;
+  color:var(--ink);
+  background:color-mix(in oklch,var(--phase) 16%,transparent);
+  border:1px solid color-mix(in oklch,var(--phase) 30%,transparent);
+  padding:.3rem .7rem; border-radius:999px; max-width:16rem;
+}
+.dial.ending .dial-num{ animation:tick .9s var(--ease) infinite; }
+@keyframes tick{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+
+.rest-next{ margin-top:.5rem; font-size:.98rem; color:var(--muted); line-height:1.35; }
+.rest-next b{ color:var(--ink); font-weight:750; }
+
+/* Controlli — spinti in fondo con margin-top:auto */
+.controls{
+  width:100%; max-width:34rem;
+  margin-top:auto; padding-top:.9rem;
+  display:flex; gap:.6rem;
+}
+.btn{
+  flex:1; min-height:60px;
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:.9rem 1rem;
+  font-size:1rem; font-weight:750; letter-spacing:.01em;
+  color:var(--ink); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:var(--r);
+  cursor:pointer;
+  transition:transform .12s var(--ease), background-color .18s var(--ease);
+}
+.btn svg{ width:1.15em; height:1.15em; flex:none; }
+.btn:active{ transform:scale(.97); background:var(--surface); }
+.btn:focus-visible{ outline:2px solid var(--phase); outline-offset:2px; }
+.btn-ghost{ flex:0 0 auto; color:var(--muted); background:transparent; border-color:transparent; }
+.btn-ghost:active{ background:var(--surface); border-color:var(--line); }
+.btn-primary{
+  flex:1.5; color:oklch(0.14 0.01 260);
+  background:var(--phase); border-color:transparent;
+  box-shadow:0 8px 24px -12px color-mix(in oklch,var(--phase) 80%,transparent);
+}
+.btn-primary:active{ background:color-mix(in oklch,var(--phase) 88%,black); }
+.btn-block{ flex:1; }
+[hidden]{ display:none !important; }
+
+/* Fine */
+.hero{ flex:1; margin:0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.1rem; text-align:center; }
+.hero h1{ font-size:clamp(2rem,9vw,2.9rem); font-weight:850; letter-spacing:-.03em; line-height:1.02; text-wrap:balance; }
+.hero p{ font-size:1rem; line-height:1.5; color:var(--muted); max-width:30rem; }
+.kicker{ font-size:.78rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--phase); }
+.end-icon{
+  width:72px; height:72px; border-radius:50%;
+  display:grid; place-content:center;
+  background:color-mix(in oklch,var(--phase) 18%,transparent); color:var(--phase);
+  animation:pop .5s var(--ease) both;
+}
+.end-icon svg{ width:36px; height:36px; }
+@keyframes pop{ from{ transform:scale(.6); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+.stat-row{ display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
+.stat{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:.9rem 1.4rem; text-align:center; }
+.stat-n{ font-size:2.1rem; font-weight:800; font-variant-numeric:tabular-nums; color:var(--phase); }
+.stat-l{ font-size:.76rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:.2rem; }
+
+/* ═══════════════════════════════════════
+   WOD 2 — AMRAP specifico
+   ═══════════════════════════════════════ */
+#s-w2-main,#s-w2-end{ --phase:var(--w2); }
+
+.w2-body{
+  flex:1; width:100%; max-width:32rem; margin:0 auto;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:.6rem;
+}
+.w2-reps{
+  font-size:clamp(5rem,24vw,8rem); font-weight:900;
+  font-variant-numeric:tabular-nums; letter-spacing:-.04em; line-height:1;
+  color:var(--phase);
+  filter:drop-shadow(0 0 22px color-mix(in oklch,var(--phase) 38%,transparent));
+}
+.w2-reps-label{
+  font-size:1rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--muted);
+}
+.w2-global{
+  font-size:1.5rem; font-weight:800; font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em; color:var(--ink); margin-top:.1rem;
+}
+.w2-sub{
+  font-size:.8rem; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted);
+}
+
+.w2-circuit{
+  width:100%; max-width:32rem;
+  display:flex; gap:.45rem; margin-top:.5rem;
+}
+.c-pill{
+  flex:1; padding:.55rem .4rem;
+  border-radius:10px; border:1px solid var(--line);
+  font-size:.76rem; font-weight:700; text-align:center; line-height:1.2;
+  color:var(--faint); background:var(--surface);
+  transition:color .2s var(--ease), background-color .2s var(--ease), border-color .2s var(--ease);
+}
+.c-pill small{ display:block; font-size:.66rem; color:var(--faint); font-weight:600; }
+.c-pill.on{
+  color:var(--phase);
+  background:color-mix(in oklch,var(--phase) 12%,transparent);
+  border-color:color-mix(in oklch,var(--phase) 35%,transparent);
+}
+.c-pill.on small{ color:color-mix(in oklch,var(--phase) 75%,transparent); }
+.c-pill.done{ color:var(--muted); }
+
+/* Phase overrides per schermata */
+#s-w1-preread{ --phase:var(--prep); }
+#s-w1-rest   { --phase:var(--rest); }
+#s-w3-preread{ --phase:var(--prep); }
+#s-w3-ex     { --phase:var(--w3);  }
+#s-w3-end    { --phase:var(--w3);  }
+
+/* Schermo basso */
+@media(max-height:680px){
+  .steps{ gap:.35rem; margin-top:.65rem; }
+  .steps li{ font-size:.9rem; }
+  .ex-title{ margin-top:.55rem; font-size:1.4rem; }
+  .dial{ width:clamp(145px,26vh,200px); }
+  .w2-reps{ font-size:clamp(4rem,18vw,6rem); }
+}
+@media(prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  .ring-prog{ transition:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Pulsanti globali -->
+<button id="btn-back" class="g-btn" aria-label="Torna a casa">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
+</button>
+<button id="btn-music" class="g-btn" aria-label="Musica" aria-pressed="true">
+  <svg class="i-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.8 5.2a9 9 0 0 1 0 13.6"/></svg>
+  <svg class="i-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m17 9 6 6"/><path d="m23 9-6 6"/></svg>
+</button>
+<div id="session-bar"><div id="session-fill"></div></div>
+
+<!-- ═══════════════════════════════════════
+     HOME
+     ═══════════════════════════════════════ -->
+<div id="s-home" class="screen active">
+  <div class="home-hd">
+    <div class="home-eyebrow">Allenamento Paolo</div>
+    <h1 class="home-h1">Scegli il<br>tuo WOD</h1>
+  </div>
+  <div class="wod-cards">
+
+    <div class="wod-card" id="card-w1" style="--c:var(--w1)" role="button" tabindex="0">
+      <div class="wod-num">WOD 1</div>
+      <div class="wod-name">Asciuga &amp; Allinea</div>
+      <div class="wod-sub">Cintura addominale, Animal Flow e upper body sulle parallele. Low-impact, focus su qualità del movimento.</div>
+      <div class="wod-tags">
+        <span class="tag tag-accent">≈ 35 min</span>
+        <span class="tag">Low-impact</span>
+        <span class="tag">Core · Upper · Mobilità</span>
+      </div>
+      <span class="wod-arrow">›</span>
+    </div>
+
+    <div class="wod-card" id="card-w2" style="--c:var(--w2)" role="button" tabindex="0">
+      <div class="wod-num">WOD 2</div>
+      <div class="wod-name">100 · 200 · 300</div>
+      <div class="wod-sub">AMRAP 20 minuti. 5 push-up → 10 kick-out → 15 squat, ripeti. Target: 20 round = 600 reps.</div>
+      <div class="wod-tags">
+        <span class="tag tag-accent">20 min</span>
+        <span class="tag">AMRAP</span>
+        <span class="tag">Push · Cardio · Gambe</span>
+      </div>
+      <span class="wod-arrow">›</span>
+    </div>
+
+    <div class="wod-card" id="card-w3" style="--c:var(--w3)" role="button" tabindex="0">
+      <div class="wod-num">WOD 3</div>
+      <div class="wod-name">Pre-Sonno</div>
+      <div class="wod-sub">Routine notturna di 10 minuti a letto. Decompressione lombare, respirazione e allungamento passivo per dormire meglio.</div>
+      <div class="wod-tags">
+        <span class="tag tag-accent">10 min</span>
+        <span class="tag">A letto</span>
+        <span class="tag">Lombari · Respiro · Stretch</span>
+      </div>
+      <span class="wod-arrow">›</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 1 — PREPARATI
+     ═══════════════════════════════════════ -->
+<div id="s-w1-preread" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w1pr-block"></span></span>
+    <span class="s-count" id="w1pr-count"></span>
+  </div>
+  <h2 class="ex-title" id="w1pr-name"></h2>
+  <div class="cue" id="w1pr-ref" hidden></div>
+  <ol class="steps" id="w1pr-steps"></ol>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w1pr-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w1pr-num">10</div>
+      <div class="dose">Preparati</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w1-skip-prep">Salta attesa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 1 — ESERCIZIO
+     ═══════════════════════════════════════ -->
+<div id="s-w1-ex" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w1ex-block"></span></span>
+    <span class="s-count" id="w1ex-count"></span>
+  </div>
+  <h2 class="ex-title" id="w1ex-name"></h2>
+  <ol class="steps" id="w1ex-steps"></ol>
+  <div class="cue" id="w1ex-cue" hidden></div>
+  <div class="dial" id="w1ex-dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w1ex-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w1ex-num">00</div>
+      <div class="dose" id="w1ex-dose"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-ghost" id="btn-w1-restart" aria-label="Ricomincia">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg>
+    </button>
+    <button class="btn btn-primary" id="btn-w1-pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      Pausa
+    </button>
+    <button class="btn btn-primary" id="btn-w1-resume" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Riprendi
+    </button>
+    <button class="btn btn-ghost" id="btn-w1-skip-ex" aria-label="Salta">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 1 — RECUPERO
+     ═══════════════════════════════════════ -->
+<div id="s-w1-rest" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span>Recupero</span></span>
+    <span class="s-count" id="w1rs-count"></span>
+  </div>
+  <h2 class="ex-title">Riposati</h2>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w1rs-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w1rs-num">60</div>
+    </div>
+  </div>
+  <div class="rest-next" id="w1rs-next"></div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w1-skip-rest">Salta pausa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 1 — FINE
+     ═══════════════════════════════════════ -->
+<div id="s-w1-end" class="screen">
+  <div class="hero">
+    <div class="end-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <span class="kicker">Grande Paolo</span>
+    <h1>WOD 1<br>Completato</h1>
+    <p>Ottimo lavoro su addome e allineamento. Stasera ricorda la routine pre-sonno anti-lordosi.</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-block" id="btn-w1-home">Torna home</button>
+    <button class="btn btn-primary btn-block" id="btn-w1-again">Rifai</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 2 — AMRAP
+     ═══════════════════════════════════════ -->
+<div id="s-w2-main" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span>AMRAP 20'</span></span>
+    <span class="s-count" id="w2-round-lbl">Round 1</span>
+  </div>
+
+  <h2 class="ex-title" id="w2-ex-name">Push-up</h2>
+  <ol class="steps" id="w2-steps"></ol>
+
+  <div class="w2-body">
+    <div class="w2-reps" id="w2-reps">5</div>
+    <div class="w2-reps-label">ripetizioni</div>
+    <div class="w2-global" id="w2-clock">20:00</div>
+    <div class="w2-sub" id="w2-stats">0 rep completate</div>
+  </div>
+
+  <div class="w2-circuit">
+    <div class="c-pill on" id="cp-0">Push-up<small>5 rep</small></div>
+    <div class="c-pill"    id="cp-1">Kick-out<small>10 rep</small></div>
+    <div class="c-pill"    id="cp-2">Squat<small>15 rep</small></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-ghost" id="btn-w2-pause" aria-label="Pausa / Riprendi">
+      <svg id="w2-pause-svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+        <rect x="6" y="5" width="4" height="14" rx="1"/>
+        <rect x="14" y="5" width="4" height="14" rx="1"/>
+      </svg>
+    </button>
+    <button class="btn btn-primary btn-block" id="btn-w2-fatto" style="flex:2;font-size:1.12rem;letter-spacing:.03em">
+      FATTO &nbsp;✓
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 2 — FINE
+     ═══════════════════════════════════════ -->
+<div id="s-w2-end" class="screen">
+  <div class="hero">
+    <div class="end-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <span class="kicker">Grande Paolo</span>
+    <h1>WOD 2<br>Completato</h1>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n" id="w2-stat-rounds">0</div><div class="stat-l">Round</div></div>
+      <div class="stat"><div class="stat-n" id="w2-stat-reps">0</div><div class="stat-l">Reps</div></div>
+    </div>
+    <p id="w2-end-msg"></p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-block" id="btn-w2-home">Torna home</button>
+    <button class="btn btn-primary btn-block" id="btn-w2-again">Rifai</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 3 — PREPARATI
+     ═══════════════════════════════════════ -->
+<div id="s-w3-preread" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w3pr-block"></span></span>
+    <span class="s-count" id="w3pr-count"></span>
+  </div>
+  <h2 class="ex-title" id="w3pr-name"></h2>
+  <ol class="steps" id="w3pr-steps"></ol>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w3pr-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w3pr-num">10</div>
+      <div class="dose">Preparati</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w3-skip-prep">Salta attesa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 3 — ESERCIZIO
+     ═══════════════════════════════════════ -->
+<div id="s-w3-ex" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w3ex-block"></span></span>
+    <span class="s-count" id="w3ex-count"></span>
+  </div>
+  <h2 class="ex-title" id="w3ex-name"></h2>
+  <ol class="steps" id="w3ex-steps"></ol>
+  <div class="dial" id="w3ex-dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w3ex-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w3ex-num">00</div>
+      <div class="dose" id="w3ex-dose"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-ghost" id="btn-w3-skip-ex" aria-label="Salta">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
+    </button>
+    <button class="btn btn-primary" id="btn-w3-pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      Pausa
+    </button>
+    <button class="btn btn-primary" id="btn-w3-resume" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Riprendi
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 3 — FINE
+     ═══════════════════════════════════════ -->
+<div id="s-w3-end" class="screen">
+  <div class="hero">
+    <div class="end-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+    </div>
+    <span class="kicker">Buona notte Paolo</span>
+    <h1>Routine<br>Completata</h1>
+    <p>Schiena decompessa, sistema nervoso a riposo. Dormi bene.</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-block" id="btn-w3-home">Torna home</button>
+    <button class="btn btn-primary btn-block" id="btn-w3-again">Rifai</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<script>
+"use strict";
+
+/* ── Helpers ── */
+const $ = id => document.getElementById(id);
+const fmt = s => s >= 60
+  ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
+  : String(s).padStart(2,'0');
+
+const RING_C = 2 * Math.PI * 54;
+document.querySelectorAll('.ring-prog').forEach(r => r.style.strokeDasharray = RING_C);
+
+function setDial(numEl, ring, left, total){
+  numEl.textContent = fmt(left);
+  ring.style.strokeDashoffset = RING_C * (1 - Math.max(0, Math.min(1, left/total)));
+}
+function primeRing(ring){
+  ring.style.transition = 'none';
+  ring.style.strokeDashoffset = 0;
+  void ring.getBoundingClientRect();
+  ring.style.transition = '';
+}
+function renderSteps(ol, steps){
+  ol.innerHTML = '';
+  steps.forEach(t => { const li = document.createElement('li'); li.textContent = t; ol.appendChild(li); });
+}
+
+/* ── Navigazione ── */
+const allScreens = document.querySelectorAll('.screen');
+const bar = $('session-bar'), fill = $('session-fill');
+const btnBack = $('btn-back'), btnMusic = $('btn-music');
+
+function showScreen(id, barColor){
+  allScreens.forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  const isHome = id === 's-home';
+  const isEnd  = id.endsWith('-end');
+  btnBack.classList.toggle('visible',  !isHome);
+  btnMusic.classList.toggle('visible', !isHome);
+  bar.classList.toggle('on', !isHome && !isEnd);
+  if(barColor) fill.style.background = barColor;
+}
+function setBarWidth(pct){ fill.style.width = pct + '%'; }
+
+function goHome(){
+  W1.stop(); W2.stop(); W3.stop(); Music.stop();
+  showScreen('s-home');
+}
+
+btnBack.addEventListener('click', goHome);
+
+/* ── Audio ── */
+const synth = window.speechSynthesis;
+function say(txt){
+  if(!synth) return;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.lang='it-IT'; u.pitch=1; u.rate=1.2;
+  u.onstart = () => Music.duck(0.4);
+  u.onend   = () => Music.duck(1);
+  synth.speak(u);
+}
+const buzz = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(_){} };
+
+let wakeLock = null;
+async function requestWakeLock(){
+  try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(_){}
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState==='visible' && !wakeLock) requestWakeLock();
+});
+
+/* ── Musica generativa (Web Audio) ── */
+const Music = (() => {
+  const CFG = {
+    w1:{ bpm:124, roots:[45,41,48,43], chords:[[57,60,64],[53,57,60],[48,55,60],[50,55,59]] },
+    w2:{ bpm:132, roots:[45,40,38,43], chords:[[57,60,64],[56,59,64],[53,57,60],[50,55,59]] },
+    w3:{ bpm:68,  roots:[48,43,45,41], chords:[[60,63,67],[55,59,62],[57,60,64],[53,57,60]] }, /* Cm-Gm-Am-Fm slow & serene */
+  };
+  const AHEAD=0.10, TICK=25, VOL=0.14;
+  let ctx=null,comp=null,master=null,noise=null;
+  let on=true, playing=false, duck=1, step=0, nextT=0, cfg=CFG.w1;
+  let tid=null, sid=null;
+
+  on = typeof localStorage!=='undefined' && localStorage.getItem('clstncs-music')==='off' ? false : true;
+  const m2f = m => 440*Math.pow(2,(m-69)/12);
+  const s16 = () => 60/cfg.bpm/4;
+
+  function init(){
+    if(ctx) return;
+    const AC = window.AudioContext||window.webkitAudioContext;
+    ctx = new AC();
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value=-16; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.2;
+    master = ctx.createGain(); master.gain.value=0.0001;
+    comp.connect(master); master.connect(ctx.destination);
+    const len = Math.floor(ctx.sampleRate*0.5);
+    noise = ctx.createBuffer(1,len,ctx.sampleRate);
+    const d = noise.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  }
+  function kick(t){
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(135,t); o.frequency.exponentialRampToValueAtTime(48,t+0.11);
+    g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+    o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.18);
+  }
+  function hat(t,open){
+    const s=ctx.createBufferSource(); s.buffer=noise;
+    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7500;
+    const g=ctx.createGain(); const dur=open?0.11:0.03;
+    g.gain.setValueAtTime(0.14,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    s.connect(hp); hp.connect(g); g.connect(comp); s.start(t); s.stop(t+dur+0.02);
+  }
+  function snare(t){
+    const s=ctx.createBufferSource(); s.buffer=noise;
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=0.8;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.26,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+    s.connect(bp); bp.connect(g); g.connect(comp); s.start(t); s.stop(t+0.16);
+  }
+  function bass(t,midi,dur){
+    const o=ctx.createOscillator(),g=ctx.createGain(),lp=ctx.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.value=m2f(midi);
+    lp.type='lowpass'; lp.frequency.value=340; lp.Q.value=5;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.22,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    o.connect(lp); lp.connect(g); g.connect(comp); o.start(t); o.stop(t+dur+0.02);
+  }
+  function pluck(t,midi,dur){
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='triangle'; o.frequency.value=m2f(midi);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.07,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    o.connect(g); g.connect(comp); o.start(t); o.stop(t+dur+0.02);
+  }
+  function sched(s,t){
+    const bar=Math.floor(s/16)%4, i=s%16, ch=cfg.chords[bar];
+    if(i%4===0) kick(t);
+    if(i===4||i===12) snare(t);
+    if(i%2===0) hat(t,i%8===6);
+    if(i%2===0) bass(t,cfg.roots[bar],s16()*1.9);
+    if(i%4===0) pluck(t,ch[(i/4)%ch.length]+12,s16()*3.4);
+  }
+  function loop(){
+    while(nextT < ctx.currentTime+AHEAD){ if(on) sched(step,nextT); nextT+=s16(); step++; }
+  }
+  function applyGain(ramp=0.05){
+    if(!master) return;
+    const tgt=(on&&playing)?VOL*duck:0.0001;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(tgt,ctx.currentTime,ramp);
+  }
+  function syncBtn(){
+    btnMusic.classList.toggle('muted',!on);
+    btnMusic.setAttribute('aria-pressed',String(on));
+  }
+  return {
+    start(wod='w1'){
+      init(); cfg=CFG[wod]||CFG.w1;
+      if(ctx.state==='suspended') ctx.resume();
+      clearTimeout(sid);
+      if(!playing){ playing=true; step=0; nextT=ctx.currentTime+0.08; clearInterval(tid); tid=setInterval(loop,TICK); }
+      applyGain(0.6); syncBtn();
+    },
+    fadeOut(){ playing=false; applyGain(0.4); clearTimeout(sid); sid=setTimeout(()=>{ clearInterval(tid); tid=null; },1800); },
+    stop(){ playing=false; applyGain(0.2); clearInterval(tid); tid=null; },
+    toggle(){ on=!on; try{ localStorage.setItem('clstncs-music',on?'on':'off'); }catch(_){} applyGain(0.08); syncBtn(); },
+    duck(v){ duck=v; applyGain(0.12); },
+    sync: syncBtn
+  };
+})();
+
+Music.sync();
+btnMusic.addEventListener('click', () => Music.toggle());
+
+/* ═══════════════════════════════════════
+   WOD 1 — DATI
+   ═══════════════════════════════════════ */
+const EX = {
+  cervical:    { name:'Cervical CARs · Collo',          time:45,  dose:'3 giri per lato',       steps:['Spalle ferme e basse','Gira la testa lentissima','3 giri completi per lato'] },
+  polso:       { name:'Polso Flow',                      time:60,  dose:'Sciogli i polsi',        steps:['A quattro zampe','Oscilla il peso sui polsi','Cambia direzione'] },
+  pelvic:      { name:'Pelvic Tilts · Sblocco bacino',  time:60,  dose:'12 ripetizioni lente',   steps:['A quattro zampe','Inarca la zona lombare (antiversione)','Appiattisci stringendo i glutei (retroversione)'] },
+  catcow:      { name:'Cat-Cow Globale',                 time:60,  dose:'8 cicli fluidi',         steps:['Parti dal bacino','Onda fluida su tutta la colonna','Chiudi con il collo'] },
+  wgs:         { name:"World's Greatest Stretch",        time:60,  dose:'3 per lato',             steps:['Posizione push-up','Piede destro fuori dalla mano destra','Ruota braccio e petto al cielo','Poi cambia lato'] },
+  reversePlank:{ name:'Reverse Plank to Tuck',          time:45,  dose:'6 transizioni lente',    steps:['Reverse plank, faccia al soffitto','Corpo dritto, glutei di marmo','Scivola il bacino tra le braccia','Ginocchia al petto, senza toccare terra'], ref:'Reel LeoMoves · Foto 2' },
+  sideKicks:   { name:'Side Kicks → Press Hold',        time:45,  dose:'4 calci per lato',       steps:['Posizione bear, ginocchia a 2 cm','Ruota e calcia una gamba di lato','Stacca la mano opposta','Torna al centro e spingi 2"'], ref:'Reel LeoMoves · Foto 3' },
+  plankSlider: { name:'Plank Slider · Knee Tucks',      time:45,  dose:'8–10 scivolate lente',   steps:['In plank, calzini sotto i piedi','Scivola le ginocchia al petto','Ridistendi le gambe','Fermati prima che la schiena ceda'] },
+  dip:         { name:'Dip alle Parallele',              time:60,  dose:'6–8 ripetizioni',        steps:['Spalle basse, busto avanti ~15°','Scendi controllando in 3"','Fino a 90° di gomito','Risali spingendo forte'] },
+  row:         { name:'Inverted Row',                    time:60,  dose:'8–10 ripetizioni',       steps:['Sospeso sotto le parallele','Tira il petto verso l\'alto','Chiudi forte le scapole','Pausa 1" in cima'] },
+  squat_b:     { name:'Squat Bulgaro',                   time:60,  dose:'10 per gamba',           steps:['Piede dietro sulla sedia','Discesa dritta e verticale','Ginocchio sopra il piede','Cambia gamba a metà'] },
+  bear:        { name:'Bear Crawl Dinamico',             time:30,  dose:'30" continui',           steps:['Posizione bear, ginocchia sollevate','4 passi avanti, 4 indietro','Muovi braccio e gamba opposti','Schiena ferma come un tavolo'] },
+  sliderFast:  { name:'Plank Slider Veloci',             time:30,  dose:'30" · max velocità',     steps:['In plank, calzini sotto i piedi','Ginocchia al petto esplosive','Ritmo continuo','Addome di pietra'] },
+  child:       { name:"Child's Pose Attiva",             time:90,  dose:'Respira profondo',       steps:['Glutei sui talloni','Mani che camminano in avanti','Respira con il diaframma'] },
+  fold:        { name:'Forward Fold Passivo',            time:60,  dose:'Rilassa tutto',          steps:['In piedi, gambe morbide','Abbandona busto e braccia a terra','Rilascia collo e spalle'] },
+  shoulder:    { name:'Crossover Shoulder Stretch',      time:60,  dose:'30" per lato',           steps:['Braccio teso davanti al petto','Tira con l\'altro braccio','Allunga senza forzare'] },
+};
+const ex  = (block,key,extra={}) => ({ type:'ex', block, ...EX[key], ...extra });
+const rst = (time=60)             => ({ type:'rest', time });
+
+const WOD1 = [
+  ex('Fase 1 · Riscaldamento','cervical'),
+  ex('Fase 1 · Riscaldamento','polso'),
+  ex('Fase 1 · Riscaldamento','pelvic'),
+  ex('Fase 1 · Riscaldamento','catcow'),
+  ex('Fase 1 · Riscaldamento','wgs'),
+  rst(),
+  ex('Blocco A · Round 1/3','reversePlank'),
+  ex('Blocco A · Round 1/3','sideKicks'),
+  ex('Blocco A · Round 1/3','plankSlider'),
+  rst(),
+  ex('Blocco A · Round 2/3','reversePlank',{cue:'Concentrati sulla compressione'}),
+  ex('Blocco A · Round 2/3','sideKicks',   {cue:'Spingi forte in Press Hold'}),
+  ex('Blocco A · Round 2/3','plankSlider', {cue:'Zero oscillazioni lombari'}),
+  rst(),
+  ex('Blocco A · Round 3/3','reversePlank',{cue:'Ultimo giro — addome di marmo'}),
+  ex('Blocco A · Round 3/3','sideKicks',   {cue:'Tensione continua'}),
+  ex('Blocco A · Round 3/3','plankSlider', {cue:'Addome di pietra'}),
+  rst(),
+  ex('Blocco B · Upper 1/3','dip'),
+  rst(),
+  ex('Blocco B · Upper 1/3','row'),
+  rst(),
+  ex('Blocco B · Upper 2/3','dip',{cue:'Busto inclinato avanti ~15°'}),
+  rst(),
+  ex('Blocco B · Upper 2/3','row',{cue:'Controlla bene la discesa'}),
+  rst(),
+  ex('Blocco B · Upper 3/3','dip',{cue:'Ultima spinta'}),
+  rst(),
+  ex('Blocco B · Upper 3/3','row',{cue:'Ultima trazione'}),
+  rst(),
+  ex('Blocco C · Finisher 1/2','squat_b'),
+  ex('Blocco C · Finisher 1/2','bear'),
+  ex('Blocco C · Finisher 1/2','sliderFast'),
+  rst(),
+  ex('Blocco C · Finisher 2/2','squat_b',    {cue:'Cambia gamba dopo 10 rep'}),
+  ex('Blocco C · Finisher 2/2','bear',        {cue:'Tieni il ritmo, cuore a mille'}),
+  ex('Blocco C · Finisher 2/2','sliderFast',  {cue:'Ultimo sforzo brucia-grassi'}),
+  rst(),
+  ex('Fase 3 · Defaticamento','child'),
+  ex('Fase 3 · Defaticamento','fold'),
+  ex('Fase 3 · Defaticamento','shoulder'),
+];
+const W1_TOTAL_EX = WOD1.filter(i=>i.type==='ex').length;
+const exDoneUpTo  = idx => WOD1.slice(0,idx).filter(i=>i.type==='ex').length;
+
+/* ═══════════════════════════════════════
+   WOD 1 — ENGINE
+   ═══════════════════════════════════════ */
+const W1 = (() => {
+  let idx=0, timer=null, left=0, paused=false;
+
+  function updateBar(){ setBarWidth(Math.round((idx/WOD1.length)*100)); }
+  function countStr()  { return `${exDoneUpTo(idx)} / ${W1_TOTAL_EX}`; }
+
+  function preread(item){
+    idx++;
+    showScreen('s-w1-preread','var(--prep)');
+    $('w1pr-block').textContent = item.block;
+    $('w1pr-name').textContent  = item.name;
+    renderSteps($('w1pr-steps'), item.steps);
+    const ref = $('w1pr-ref');
+    if(item.ref){ ref.hidden=false; ref.textContent='↗ '+item.ref; } else ref.hidden=true;
+    $('w1pr-count').textContent = countStr();
+    updateBar();
+    left=10; primeRing($('w1pr-ring'));
+    setDial($('w1pr-num'),$('w1pr-ring'),left,10);
+    say('Preparati.');
+    clearInterval(timer);
+    timer = setInterval(()=>{ left--; setDial($('w1pr-num'),$('w1pr-ring'),Math.max(0,left),10); if(left<=0){ clearInterval(timer); exercise(item); } },1000);
+  }
+
+  function exercise(item){
+    paused=false;
+    showScreen('s-w1-ex','var(--w1)');
+    $('btn-w1-pause').hidden=false; $('btn-w1-resume').hidden=true;
+    $('w1ex-block').textContent = item.block;
+    $('w1ex-name').textContent  = item.name;
+    $('w1ex-dose').textContent  = item.dose;
+    $('w1ex-count').textContent = countStr();
+    renderSteps($('w1ex-steps'), item.steps);
+    const cue=$('w1ex-cue');
+    if(item.cue){ cue.hidden=false; cue.textContent=item.cue; } else cue.hidden=true;
+    $('w1ex-dial').classList.remove('ending');
+    left=item.time; primeRing($('w1ex-ring'));
+    setDial($('w1ex-num'),$('w1ex-ring'),left,left);
+    say('Via!'); buzz(60);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      if(paused) return;
+      left--; setDial($('w1ex-num'),$('w1ex-ring'),Math.max(0,left),item.time);
+      $('w1ex-dial').classList.toggle('ending', left<=3 && left>0);
+      if(left<=0){ clearInterval(timer); $('w1ex-dial').classList.remove('ending'); next(); }
+    },1000);
+  }
+
+  function restScreen(item){
+    idx++;
+    showScreen('s-w1-rest','var(--rest)');
+    $('w1rs-count').textContent = countStr();
+    const nxt = WOD1[idx];
+    $('w1rs-next').innerHTML = nxt ? `Prossimo: <b>${nxt.name}</b>` : 'Ultimo sforzo!';
+    updateBar();
+    left=item.time; primeRing($('w1rs-ring'));
+    setDial($('w1rs-num'),$('w1rs-ring'),left,left);
+    say('Pausa.'); buzz(30);
+    clearInterval(timer);
+    timer = setInterval(()=>{ left--; setDial($('w1rs-num'),$('w1rs-ring'),Math.max(0,left),item.time); if(left<=0){ clearInterval(timer); next(); } },1000);
+  }
+
+  function next(){
+    if(idx>=WOD1.length){ end(); return; }
+    const item=WOD1[idx];
+    if(item.type==='ex') preread(item); else restScreen(item);
+  }
+
+  function end(){
+    showScreen('s-w1-end'); bar.classList.remove('on');
+    say('Grande Paolo, finito.'); buzz([80,60,80,60,160]); Music.fadeOut();
+    clearInterval(timer);
+  }
+
+  return {
+    start()      { idx=0; next(); },
+    stop()       { clearInterval(timer); timer=null; },
+    skipPrep()   { clearInterval(timer); exercise(WOD1[idx-1]); },
+    skipRest()   { clearInterval(timer); next(); },
+    skipEx()     { clearInterval(timer); next(); },
+    restart()    { clearInterval(timer); idx--; exercise(WOD1[idx]); },
+    pause()      { paused=true;  $('btn-w1-pause').hidden=true;  $('btn-w1-resume').hidden=false; $('w1ex-dial').classList.remove('ending'); },
+    unpause()    { paused=false; $('btn-w1-pause').hidden=false; $('btn-w1-resume').hidden=true; },
+  };
+})();
+
+$('card-w1').addEventListener('click',()=>{
+  requestWakeLock();
+  if(synth) synth.speak(new SpeechSynthesisUtterance(''));
+  Music.start('w1'); W1.start();
+});
+$('btn-w1-skip-prep').addEventListener('click',  ()=>W1.skipPrep());
+$('btn-w1-skip-rest').addEventListener('click',  ()=>W1.skipRest());
+$('btn-w1-skip-ex').addEventListener('click',    ()=>W1.skipEx());
+$('btn-w1-pause').addEventListener('click',      ()=>W1.pause());
+$('btn-w1-resume').addEventListener('click',     ()=>W1.unpause());
+$('btn-w1-restart').addEventListener('click',   ()=>W1.restart());
+$('btn-w1-home').addEventListener('click',       ()=>goHome());
+$('btn-w1-again').addEventListener('click',      ()=>{ Music.start('w1'); W1.start(); });
+
+/* ═══════════════════════════════════════
+   WOD 2 — DATI
+   ═══════════════════════════════════════ */
+const CIRCUIT = [
+  { name:'Push-up',  reps:5,  steps:['Mani larghezza spalle, corpo dritto','Petto tocca terra in modo controllato','Spingi esplosivo verso l\'alto'] },
+  { name:'Kick-out', reps:10, steps:['Da accovacciato, mani a terra','Calcia entrambe le gambe indietro in plank','Ritorna accovacciato, poi alzati'] },
+  { name:'Squat',    reps:15, steps:['Piedi larghezza spalle, punte fuori','Scendi a 90°, petto alto, talloni a terra','Spingi i talloni e risali'] },
+];
+const W2_TOTAL = 20*60;
+const W2_TARGET = 20;
+
+/* ═══════════════════════════════════════
+   WOD 2 — ENGINE
+   ═══════════════════════════════════════ */
+const W2 = (() => {
+  let gtimer=null, left=0, paused=false;
+  let ci=0, round=0, totalReps=0;
+
+  const pauseSVG  = '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+  const playSVG   = '<path d="M8 5v14l11-7z"/>';
+
+  function render(){
+    const c = CIRCUIT[ci];
+    $('w2-ex-name').textContent  = c.name;
+    $('w2-reps').textContent     = c.reps;
+    $('w2-round-lbl').textContent= `Round ${round+1}`;
+    $('w2-stats').textContent    = `${totalReps} rep · ${round} round`;
+    renderSteps($('w2-steps'), c.steps);
+    CIRCUIT.forEach((_,i)=>{
+      const p=$(`cp-${i}`);
+      p.classList.toggle('on',   i===ci);
+      p.classList.toggle('done', i<ci && ci>0 || (round>0 && i>=ci));
+    });
+    // semplifica: pill active = corrente
+    CIRCUIT.forEach((_,i)=>{
+      const p=$(`cp-${i}`);
+      p.classList.remove('on','done');
+      if(i===ci)   p.classList.add('on');
+      else if(i<ci) p.classList.add('done');
+    });
+  }
+
+  function updateClock(){
+    $('w2-clock').textContent = fmt(left);
+    setBarWidth(Math.round((1-left/W2_TOTAL)*100));
+  }
+
+  function endWOD(){
+    clearInterval(gtimer);
+    showScreen('s-w2-end'); bar.classList.remove('on');
+    $('w2-stat-rounds').textContent = round;
+    $('w2-stat-reps').textContent   = totalReps;
+    const score = round>=W2_TARGET ? 'TARGET CENTRATO! 100-200-300 completi. 🔥'
+                : round>=18        ? 'Quasi target! Ci sei quasi.'
+                : round>=15        ? 'Ottima sessione! Più della metà fatta.'
+                : round>=10        ? 'Buona base. La prossima vai ancora più forte.'
+                :                    'Hai iniziato — è già una vittoria.';
+    $('w2-end-msg').textContent = score;
+    say(`Grande Paolo, finito. Hai completato ${round} round.`);
+    buzz([80,60,80,60,160]); Music.fadeOut();
+  }
+
+  return {
+    start(){
+      ci=0; round=0; totalReps=0; paused=false; left=W2_TOTAL;
+      showScreen('s-w2-main','var(--w2)');
+      render(); updateClock();
+      say('Via!'); buzz(60);
+      $('w2-pause-svg').innerHTML = pauseSVG;
+      clearInterval(gtimer);
+      gtimer = setInterval(()=>{
+        if(paused) return;
+        left--; updateClock();
+        if(left===5*60) say('Cinque minuti!');
+        if(left===60)   say('Un minuto!');
+        if(left<=0){ endWOD(); }
+      },1000);
+    },
+    stop(){ clearInterval(gtimer); gtimer=null; },
+    fatto(){
+      totalReps += CIRCUIT[ci].reps;
+      ci++;
+      if(ci>=CIRCUIT.length){
+        ci=0; round++;
+        if(round>=W2_TARGET){ clearInterval(gtimer); endWOD(); return; }
+        say(`Round ${round+1}!`);
+      } else {
+        say(CIRCUIT[ci].name);
+      }
+      buzz(40); render();
+    },
+    togglePause(){
+      paused=!paused;
+      $('w2-pause-svg').innerHTML = paused ? playSVG : pauseSVG;
+    },
+  };
+})();
+
+$('card-w2').addEventListener('click',()=>{
+  requestWakeLock();
+  if(synth) synth.speak(new SpeechSynthesisUtterance(''));
+  Music.start('w2'); W2.start();
+});
+$('btn-w2-fatto').addEventListener('click',  ()=>W2.fatto());
+$('btn-w2-pause').addEventListener('click',  ()=>W2.togglePause());
+$('btn-w2-home').addEventListener('click',   ()=>goHome());
+$('btn-w2-again').addEventListener('click',  ()=>{ Music.start('w2'); W2.start(); });
+
+/* ═══════════════════════════════════════
+   WOD 3 — DATI (Pre-sonno, 10 min)
+   ═══════════════════════════════════════ */
+const WOD3 = [
+  { type:'ex', block:'Pre-sonno · Respiro',   name:'Respirazione Diaframmatica', time:180, dose:'3 minuti',   steps:['Supino, gambe distese','Inspira gonfiando la pancia (non il petto)','Espira appiattendo completamente la schiena al materasso'] },
+  { type:'ex', block:'Pre-sonno · Apertura',  name:'Supine Butterfly',           time:90,  dose:'90 secondi', steps:['Supino, piante dei piedi unite','Ginocchia che cadono ai lati','Lascia andare il peso, respira'] },
+  { type:'ex', block:'Pre-sonno · Torsione',  name:'Gentle Spinal Twist',        time:120, dose:'60" per lato',steps:['Supino, ginocchia piegate','Fai cadere le ginocchia da un lato','Testa dall\'altro lato, braccia a T — cambia lato a metà'] },
+  { type:'ex', block:'Pre-sonno · Lombari',   name:'Knees-to-Chest',             time:90,  dose:'90 secondi', steps:['Supino, abbraccia entrambe le ginocchia','Dondola piano avanti e indietro','Massaggia i lombari sul materasso'] },
+  { type:'ex', block:'Pre-sonno · Flessione', name:'Forward Fold Passivo',       time:120, dose:'2 minuti',   steps:['Seduto, gambe tese avanti','Abbandona il busto verso le gambe','Senza forzare — rilascia testa e collo'] },
+];
+const W3_TOTAL_EX = WOD3.length;
+
+/* ═══════════════════════════════════════
+   WOD 3 — ENGINE
+   ═══════════════════════════════════════ */
+const W3 = (() => {
+  let idx=0, timer=null, left=0, paused=false;
+
+  function countStr(){ return `${idx} / ${W3_TOTAL_EX}`; }
+  function updateBar(){ setBarWidth(Math.round((idx/WOD3.length)*100)); }
+
+  function preread(item){
+    showScreen('s-w3-preread','var(--prep)');
+    $('w3pr-block').textContent = item.block;
+    $('w3pr-name').textContent  = item.name;
+    renderSteps($('w3pr-steps'), item.steps);
+    $('w3pr-count').textContent = countStr();
+    updateBar();
+    left=10; primeRing($('w3pr-ring'));
+    setDial($('w3pr-num'),$('w3pr-ring'),left,10);
+    say('Preparati.');
+    clearInterval(timer);
+    timer = setInterval(()=>{ left--; setDial($('w3pr-num'),$('w3pr-ring'),Math.max(0,left),10); if(left<=0){ clearInterval(timer); exercise(item); } },1000);
+  }
+
+  function exercise(item){
+    paused=false; idx++;
+    showScreen('s-w3-ex','var(--w3)');
+    $('btn-w3-pause').hidden=false; $('btn-w3-resume').hidden=true;
+    $('w3ex-block').textContent = item.block;
+    $('w3ex-name').textContent  = item.name;
+    $('w3ex-dose').textContent  = item.dose;
+    $('w3ex-count').textContent = countStr();
+    renderSteps($('w3ex-steps'), item.steps);
+    $('w3ex-dial').classList.remove('ending');
+    updateBar();
+    left=item.time; primeRing($('w3ex-ring'));
+    setDial($('w3ex-num'),$('w3ex-ring'),left,left);
+    say(item.name);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      if(paused) return;
+      left--; setDial($('w3ex-num'),$('w3ex-ring'),Math.max(0,left),item.time);
+      $('w3ex-dial').classList.toggle('ending', left<=3 && left>0);
+      if(left<=0){ clearInterval(timer); $('w3ex-dial').classList.remove('ending'); next(); }
+    },1000);
+  }
+
+  function next(){
+    if(idx>=WOD3.length){ end(); return; }
+    preread(WOD3[idx]);
+  }
+
+  function end(){
+    showScreen('s-w3-end'); bar.classList.remove('on');
+    say('Buona notte Paolo.'); buzz([40,30,80]); Music.fadeOut();
+    clearInterval(timer);
+  }
+
+  return {
+    start()    { idx=0; preread(WOD3[idx]); },
+    stop()     { clearInterval(timer); timer=null; },
+    skipPrep() { clearInterval(timer); exercise(WOD3[idx]); },
+    skipEx()   { clearInterval(timer); next(); },
+    pause()    { paused=true;  $('btn-w3-pause').hidden=true;  $('btn-w3-resume').hidden=false; $('w3ex-dial').classList.remove('ending'); },
+    unpause()  { paused=false; $('btn-w3-pause').hidden=false; $('btn-w3-resume').hidden=true; },
+  };
+})();
+
+$('card-w3').addEventListener('click',()=>{
+  requestWakeLock();
+  if(synth) synth.speak(new SpeechSynthesisUtterance(''));
+  Music.start('w3'); W3.start();
+});
+$('btn-w3-skip-prep').addEventListener('click', ()=>W3.skipPrep());
+$('btn-w3-skip-ex').addEventListener('click',   ()=>W3.skipEx());
+$('btn-w3-pause').addEventListener('click',     ()=>W3.pause());
+$('btn-w3-resume').addEventListener('click',    ()=>W3.unpause());
+$('btn-w3-home').addEventListener('click',      ()=>goHome());
+$('btn-w3-again').addEventListener('click',     ()=>{ Music.start('w3'); W3.start(); });
+
+/* Accessibilità tastiera per le card */
+[$('card-w1'),$('card-w2'),$('card-w3')].forEach(c=>{
+  c.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') c.click(); });
+});
+</script>
+</body>
+</html>
