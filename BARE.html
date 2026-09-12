@@ -1,3 +1,4 @@
+<!-- BARE v1 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -113,6 +114,15 @@ body{
 }
 
 .wod-cards{ width:100%; max-width:34rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
+
+.ver-badge{
+  width:100%; max-width:34rem;
+  margin-left:auto; margin-right:auto;
+  text-align:right; padding-top:.5rem;
+  font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+  color:oklch(0.6 0 0 / .35);
+  user-select:none;
+}
 
 .wod-card{
   position:relative; background:var(--surface);
@@ -426,6 +436,7 @@ body{
     </div>
 
   </div>
+  <div class="ver-badge" id="ver-badge"></div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -678,6 +689,7 @@ body{
 "use strict";
 
 /* ── Helpers ── */
+const APP_VERSION = '1';
 const $ = id => document.getElementById(id);
 const fmt = s => s >= 60
   ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
@@ -727,11 +739,13 @@ btnBack.addEventListener('click', goHome);
 
 /* ── Audio ── */
 const synth = window.speechSynthesis;
-function say(txt){
+
+function say(txt, lang){
   if(!synth) return;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(txt);
-  u.lang='it-IT'; u.pitch=1; u.rate=1.2;
+  u.lang = lang === 'en' ? 'en-US' : 'it-IT';
+  u.pitch=1; u.rate=1.2;
   u.onstart = () => Music.duck(0.4);
   u.onend   = () => Music.duck(1);
   synth.speak(u);
@@ -858,18 +872,18 @@ const EX = {
   polso:       { name:'Polso Flow',                      time:60,  dose:'Sciogli i polsi',        steps:['A quattro zampe','Oscilla il peso sui polsi','Cambia direzione'] },
   pelvic:      { name:'Pelvic Tilts · Sblocco bacino',  time:60,  dose:'12 ripetizioni lente',   steps:['A quattro zampe','Inarca la zona lombare (antiversione)','Appiattisci stringendo i glutei (retroversione)'] },
   catcow:      { name:'Cat-Cow Globale',                 time:60,  dose:'8 cicli fluidi',         steps:['Parti dal bacino','Onda fluida su tutta la colonna','Chiudi con il collo'] },
-  wgs:         { name:"World's Greatest Stretch",        time:60,  dose:'3 per lato',             steps:['Posizione push-up','Piede destro fuori dalla mano destra','Ruota braccio e petto al cielo','Poi cambia lato'] },
-  reversePlank:{ name:'Reverse Plank to Tuck',          time:45,  dose:'6 transizioni lente',    steps:['Reverse plank, faccia al soffitto','Corpo dritto, glutei di marmo','Scivola il bacino tra le braccia','Ginocchia al petto, senza toccare terra'], ref:'Reel LeoMoves · Foto 2' },
-  sideKicks:   { name:'Side Kicks → Press Hold',        time:45,  dose:'4 calci per lato',       steps:['Posizione bear, ginocchia a 2 cm','Ruota e calcia una gamba di lato','Stacca la mano opposta','Torna al centro e spingi 2"'], ref:'Reel LeoMoves · Foto 3' },
-  plankSlider: { name:'Plank Slider · Knee Tucks',      time:45,  dose:'8–10 scivolate lente',   steps:['In plank, calzini sotto i piedi','Scivola le ginocchia al petto','Ridistendi le gambe','Fermati prima che la schiena ceda'] },
+  wgs:         { name:"World's Greatest Stretch",  lang:'en', time:60,  dose:'3 per lato',             steps:['Posizione push-up','Piede destro fuori dalla mano destra','Ruota braccio e petto al cielo','Poi cambia lato'] },
+  reversePlank:{ name:'Reverse Plank to Tuck',    lang:'en', time:45,  dose:'6 transizioni lente',    steps:['Reverse plank, faccia al soffitto','Corpo dritto, glutei di marmo','Scivola il bacino tra le braccia','Ginocchia al petto, senza toccare terra'], ref:'Reel LeoMoves · Foto 2' },
+  sideKicks:   { name:'Side Kicks → Press Hold',  lang:'en', time:45,  dose:'4 calci per lato',       steps:['Posizione bear, ginocchia a 2 cm','Ruota e calcia una gamba di lato','Stacca la mano opposta','Torna al centro e spingi 2"'], ref:'Reel LeoMoves · Foto 3' },
+  plankSlider: { name:'Plank Slider · Knee Tucks',lang:'en', time:45,  dose:'8–10 scivolate lente',   steps:['In plank, calzini sotto i piedi','Scivola le ginocchia al petto','Ridistendi le gambe','Fermati prima che la schiena ceda'] },
   dip:         { name:'Dip alle Parallele',              time:60,  dose:'6–8 ripetizioni',        steps:['Spalle basse, busto avanti ~15°','Scendi controllando in 3"','Fino a 90° di gomito','Risali spingendo forte'] },
-  row:         { name:'Inverted Row',                    time:60,  dose:'8–10 ripetizioni',       steps:['Sospeso sotto le parallele','Tira il petto verso l\'alto','Chiudi forte le scapole','Pausa 1" in cima'] },
+  row:         { name:'Inverted Row',         lang:'en', time:60,  dose:'8–10 ripetizioni',       steps:['Sospeso sotto le parallele','Tira il petto verso l\'alto','Chiudi forte le scapole','Pausa 1" in cima'] },
   squat_b:     { name:'Squat Bulgaro',                   time:60,  dose:'10 per gamba',           steps:['Piede dietro sulla sedia','Discesa dritta e verticale','Ginocchio sopra il piede','Cambia gamba a metà'] },
   bear:        { name:'Bear Crawl Dinamico',             time:30,  dose:'30" continui',           steps:['Posizione bear, ginocchia sollevate','4 passi avanti, 4 indietro','Muovi braccio e gamba opposti','Schiena ferma come un tavolo'] },
   sliderFast:  { name:'Plank Slider Veloci',             time:30,  dose:'30" · max velocità',     steps:['In plank, calzini sotto i piedi','Ginocchia al petto esplosive','Ritmo continuo','Addome di pietra'] },
   child:       { name:"Child's Pose Attiva",             time:90,  dose:'Respira profondo',       steps:['Glutei sui talloni','Mani che camminano in avanti','Respira con il diaframma'] },
   fold:        { name:'Forward Fold Passivo',            time:60,  dose:'Rilassa tutto',          steps:['In piedi, gambe morbide','Abbandona busto e braccia a terra','Rilascia collo e spalle'] },
-  shoulder:    { name:'Crossover Shoulder Stretch',      time:60,  dose:'30" per lato',           steps:['Braccio teso davanti al petto','Tira con l\'altro braccio','Allunga senza forzare'] },
+  shoulder:    { name:'Crossover Shoulder Stretch',lang:'en',time:60,  dose:'30" per lato',           steps:['Braccio teso davanti al petto','Tira con l\'altro braccio','Allunga senza forzare'] },
 };
 const ex  = (block,key,extra={}) => ({ type:'ex', block, ...EX[key], ...extra });
 const rst = (time=60)             => ({ type:'rest', time });
@@ -1026,9 +1040,9 @@ $('btn-w1-again').addEventListener('click',      ()=>{ Music.start('w1'); W1.sta
    WOD 2 — DATI
    ═══════════════════════════════════════ */
 const CIRCUIT = [
-  { name:'Push-up',  reps:5,  steps:['Mani larghezza spalle, corpo dritto','Petto tocca terra in modo controllato','Spingi esplosivo verso l\'alto'] },
-  { name:'Kick-out', reps:10, steps:['Da accovacciato, mani a terra','Calcia entrambe le gambe indietro in plank','Ritorna accovacciato, poi alzati'] },
-  { name:'Squat',    reps:15, steps:['Piedi larghezza spalle, punte fuori','Scendi a 90°, petto alto, talloni a terra','Spingi i talloni e risali'] },
+  { name:'Push-up',  lang:'en', reps:5,  steps:['Mani larghezza spalle, corpo dritto','Petto tocca terra in modo controllato','Spingi esplosivo verso l\'alto'] },
+  { name:'Kick-out', lang:'en', reps:10, steps:['Da accovacciato, mani a terra','Calcia entrambe le gambe indietro in plank','Ritorna accovacciato, poi alzati'] },
+  { name:'Squat',    lang:'en', reps:15, steps:['Piedi larghezza spalle, punte fuori','Scendi a 90°, petto alto, talloni a terra','Spingi i talloni e risali'] },
 ];
 const W2_TOTAL = 20*60;
 const W2_TARGET = 20;
@@ -1109,7 +1123,7 @@ const W2 = (() => {
         if(round>=W2_TARGET){ clearInterval(gtimer); endWOD(); return; }
         say(`Round ${round+1}!`);
       } else {
-        say(CIRCUIT[ci].name);
+        say(CIRCUIT[ci].name, CIRCUIT[ci].lang);
       }
       buzz(40); render();
     },
@@ -1135,9 +1149,9 @@ $('btn-w2-again').addEventListener('click',  ()=>{ Music.start('w2'); W2.start()
    ═══════════════════════════════════════ */
 const WOD3 = [
   { type:'ex', block:'Pre-sonno · Respiro',   name:'Respirazione Diaframmatica', time:180, dose:'3 minuti',   steps:['Supino, gambe distese','Inspira gonfiando la pancia (non il petto)','Espira appiattendo completamente la schiena al materasso'] },
-  { type:'ex', block:'Pre-sonno · Apertura',  name:'Supine Butterfly',           time:90,  dose:'90 secondi', steps:['Supino, piante dei piedi unite','Ginocchia che cadono ai lati','Lascia andare il peso, respira'] },
-  { type:'ex', block:'Pre-sonno · Torsione',  name:'Gentle Spinal Twist',        time:120, dose:'60" per lato',steps:['Supino, ginocchia piegate','Fai cadere le ginocchia da un lato','Testa dall\'altro lato, braccia a T — cambia lato a metà'] },
-  { type:'ex', block:'Pre-sonno · Lombari',   name:'Knees-to-Chest',             time:90,  dose:'90 secondi', steps:['Supino, abbraccia entrambe le ginocchia','Dondola piano avanti e indietro','Massaggia i lombari sul materasso'] },
+  { type:'ex', block:'Pre-sonno · Apertura',  name:'Supine Butterfly',    lang:'en', time:90,  dose:'90 secondi', steps:['Supino, piante dei piedi unite','Ginocchia che cadono ai lati','Lascia andare il peso, respira'] },
+  { type:'ex', block:'Pre-sonno · Torsione',  name:'Gentle Spinal Twist', lang:'en', time:120, dose:'60" per lato',steps:['Supino, ginocchia piegate','Fai cadere le ginocchia da un lato','Testa dall\'altro lato, braccia a T — cambia lato a metà'] },
+  { type:'ex', block:'Pre-sonno · Lombari',   name:'Knees-to-Chest',      lang:'en', time:90,  dose:'90 secondi', steps:['Supino, abbraccia entrambe le ginocchia','Dondola piano avanti e indietro','Massaggia i lombari sul materasso'] },
   { type:'ex', block:'Pre-sonno · Flessione', name:'Forward Fold Passivo',       time:120, dose:'2 minuti',   steps:['Seduto, gambe tese avanti','Abbandona il busto verso le gambe','Senza forzare — rilascia testa e collo'] },
 ];
 const W3_TOTAL_EX = WOD3.length;
@@ -1178,7 +1192,7 @@ const W3 = (() => {
     updateBar();
     left=item.time; primeRing($('w3ex-ring'));
     setDial($('w3ex-num'),$('w3ex-ring'),left,left);
-    say(item.name);
+    say(item.name, item.lang);
     clearInterval(timer);
     timer = setInterval(()=>{
       if(paused) return;
@@ -1220,6 +1234,8 @@ $('btn-w3-pause').addEventListener('click',     ()=>W3.pause());
 $('btn-w3-resume').addEventListener('click',    ()=>W3.unpause());
 $('btn-w3-home').addEventListener('click',      ()=>goHome());
 $('btn-w3-again').addEventListener('click',     ()=>{ Music.start('w3'); W3.start(); });
+
+$('ver-badge').textContent = 'v' + APP_VERSION;
 
 /* Accessibilità tastiera per le card */
 [$('card-w1'),$('card-w2'),$('card-w3')].forEach(c=>{
