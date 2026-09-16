@@ -1,4 +1,4 @@
-<!-- BARE v9 —— bump VERSION in JS when releasing -->
+<!-- BARE v10 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -1036,7 +1036,7 @@ body{
 "use strict";
 
 /* ── Helpers ── */
-const APP_VERSION = '9';
+const APP_VERSION = '10';
 const $ = id => document.getElementById(id);
 const fmt = s => s >= 60
   ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
@@ -1065,6 +1065,8 @@ const allScreens = document.querySelectorAll('.screen');
 const bar = $('session-bar'), fill = $('session-fill');
 const btnBack = $('btn-back'), btnMusic = $('btn-music');
 
+let backArmed = false;   // c'è una voce history da "consumare" col back?
+
 function showScreen(id, barColor){
   allScreens.forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
@@ -1074,6 +1076,8 @@ function showScreen(id, barColor){
   btnMusic.classList.toggle('visible', !isHome);
   bar.classList.toggle('on', !isHome && !isEnd);
   if(barColor) fill.style.background = barColor;
+  // Lasciando la home, arma il back del telefono → tornerà qui invece di uscire
+  if(!isHome && !backArmed){ history.pushState(null, ''); backArmed = true; }
 }
 function setBarWidth(pct){ fill.style.width = pct + '%'; }
 
@@ -1081,8 +1085,16 @@ function goHome(){
   W1.stop(); W2.stop(); W3.stop(); W4.stop(); W6.stop(); Music.stop();
   showScreen('s-home');
 }
+// Back "applicativo": se siamo dentro un WOD, consuma la voce history (→ popstate → home)
+function navHome(){ if(backArmed) history.back(); else goHome(); }
 
-btnBack.addEventListener('click', goHome);
+// Back del telefono (Android hardware / gesture browser) intercettato come "torna alla home"
+window.addEventListener('popstate', () => {
+  backArmed = false;
+  if(!$('s-home').classList.contains('active')) goHome();
+});
+
+btnBack.addEventListener('click', navHome);
 
 /* ── Audio ── */
 const synth = window.speechSynthesis;
@@ -1426,7 +1438,7 @@ $('btn-w1-resume').addEventListener('click',     ()=>W1.unpause());
 $('btn-w1-restart').addEventListener('click',   ()=>W1.restart());
 $('btn-w1-giveup').addEventListener('click',     ()=>W1.giveUp());
 $('btn-w1-share').addEventListener('click',      ()=>shareResult());
-$('btn-w1-home').addEventListener('click',       ()=>goHome());
+$('btn-w1-home').addEventListener('click',       ()=>navHome());
 $('btn-w1-again').addEventListener('click',      ()=>{ Music.start('w1'); W1.start(); });
 
 /* ═══════════════════════════════════════
@@ -1545,7 +1557,7 @@ $('btn-w2-fatto').addEventListener('click',  ()=>W2.fatto());
 $('btn-w2-pause').addEventListener('click',  ()=>W2.togglePause());
 $('btn-w2-giveup').addEventListener('click', ()=>W2.giveUp());
 $('btn-w2-share').addEventListener('click',  ()=>shareResult());
-$('btn-w2-home').addEventListener('click',   ()=>goHome());
+$('btn-w2-home').addEventListener('click',   ()=>navHome());
 $('btn-w2-again').addEventListener('click',  ()=>{ Music.start('w2'); W2.start(); });
 
 /* ═══════════════════════════════════════
@@ -1638,7 +1650,7 @@ $('btn-w3-skip-ex').addEventListener('click',   ()=>W3.skipEx());
 $('btn-w3-pause').addEventListener('click',     ()=>W3.pause());
 $('btn-w3-resume').addEventListener('click',    ()=>W3.unpause());
 $('btn-w3-share').addEventListener('click',     ()=>shareResult());
-$('btn-w3-home').addEventListener('click',      ()=>goHome());
+$('btn-w3-home').addEventListener('click',      ()=>navHome());
 $('btn-w3-again').addEventListener('click',     ()=>{ Music.start('w3'); W3.start(); });
 
 /* ═══════════════════════════════════════
@@ -1777,7 +1789,7 @@ $('btn-w4-pause').addEventListener('click',     ()=>W4.pause());
 $('btn-w4-resume').addEventListener('click',    ()=>W4.unpause());
 $('btn-w4-giveup').addEventListener('click',    ()=>W4.giveUp());
 $('btn-w4-share').addEventListener('click',     ()=>shareResult());
-$('btn-w4-home').addEventListener('click',      ()=>goHome());
+$('btn-w4-home').addEventListener('click',      ()=>navHome());
 $('btn-w4-again').addEventListener('click',     ()=>{ Music.start('w4'); W4.start(); });
 
 /* ═══════════════════════════════════════
@@ -1914,7 +1926,7 @@ $('btn-w6-pause').addEventListener('click',     ()=>W6.pause());
 $('btn-w6-resume').addEventListener('click',    ()=>W6.unpause());
 $('btn-w6-giveup').addEventListener('click',    ()=>W6.giveUp());
 $('btn-w6-share').addEventListener('click',     ()=>shareResult());
-$('btn-w6-home').addEventListener('click',      ()=>goHome());
+$('btn-w6-home').addEventListener('click',      ()=>navHome());
 $('btn-w6-again').addEventListener('click',     ()=>{ Music.start('w6'); W6.start(); });
 
 $('ver-badge').textContent = 'v' + APP_VERSION;
