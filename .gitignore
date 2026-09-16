@@ -1,0 +1,13 @@
+# Build artifact per il deploy su Cloudflare Pages (rigenerato da deploy.sh)
+dist/
+
+# Wrangler
+.wrangler/
+node_modules/
+
+# Credenziali deploy (segreti — mai committare)
+.dev.vars
+.env
+
+# macOS
+.DS_Store

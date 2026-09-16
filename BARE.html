@@ -1,4 +1,4 @@
-<!-- BARE v1 —— bump VERSION in JS when releasing -->
+<!-- BARE v2 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -19,6 +19,7 @@
   --w1:   oklch(0.855 0.205 156);   /* verde */
   --w2:   oklch(0.72  0.205  32);   /* arancio-rosso */
   --w3:   oklch(0.68  0.135 295);   /* lavanda/notte */
+  --w4:   oklch(0.80  0.135 200);   /* ciano/functional */
   --prep: oklch(0.78  0.165  66);
   --rest: oklch(0.68  0.165 255);
   --phase: var(--w1);
@@ -362,6 +363,10 @@ body{
 #s-w3-preread{ --phase:var(--prep); }
 #s-w3-ex     { --phase:var(--w3);  }
 #s-w3-end    { --phase:var(--w3);  }
+#s-w4-preread{ --phase:var(--prep); }
+#s-w4-rest   { --phase:var(--rest); }
+#s-w4-ex     { --phase:var(--w4);  }
+#s-w4-end    { --phase:var(--w4);  }
 
 /* Schermo basso */
 @media(max-height:680px){
@@ -431,6 +436,18 @@ body{
         <span class="tag tag-accent">10 min</span>
         <span class="tag">A letto</span>
         <span class="tag">Lombari · Respiro · Stretch</span>
+      </div>
+      <span class="wod-arrow">›</span>
+    </div>
+
+    <div class="wod-card" id="card-w4" style="--c:var(--w4)" role="button" tabindex="0">
+      <div class="wod-num">WOD 4</div>
+      <div class="wod-name">Functional</div>
+      <div class="wod-sub">Circuito a corpo libero: side plank, glute bridge, bear, spider-man, dead bug. 40&Prime; lavoro / 20&Prime; recupero, 3 giri.</div>
+      <div class="wod-tags">
+        <span class="tag tag-accent">≈ 15 min</span>
+        <span class="tag">Circuito</span>
+        <span class="tag">Core · Glutei · Full-body</span>
       </div>
       <span class="wod-arrow">›</span>
     </div>
@@ -684,12 +701,114 @@ body{
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════
+     WOD 4 — PREPARATI
+     ═══════════════════════════════════════ -->
+<div id="s-w4-preread" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w4pr-block"></span></span>
+    <span class="s-count" id="w4pr-count"></span>
+  </div>
+  <h2 class="ex-title" id="w4pr-name"></h2>
+  <ol class="steps" id="w4pr-steps"></ol>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w4pr-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w4pr-num">10</div>
+      <div class="dose">Preparati</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w4-skip-prep">Salta attesa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 4 — ESERCIZIO
+     ═══════════════════════════════════════ -->
+<div id="s-w4-ex" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w4ex-block"></span></span>
+    <span class="s-count" id="w4ex-count"></span>
+  </div>
+  <h2 class="ex-title" id="w4ex-name"></h2>
+  <ol class="steps" id="w4ex-steps"></ol>
+  <div class="dial" id="w4ex-dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w4ex-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w4ex-num">00</div>
+      <div class="dose" id="w4ex-dose"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-w4-pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      Pausa
+    </button>
+    <button class="btn btn-primary" id="btn-w4-resume" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Riprendi
+    </button>
+    <button class="btn btn-ghost" id="btn-w4-skip-ex" aria-label="Salta">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 4 — RECUPERO
+     ═══════════════════════════════════════ -->
+<div id="s-w4-rest" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span>Recupero</span></span>
+    <span class="s-count" id="w4rs-count"></span>
+  </div>
+  <h2 class="ex-title">Riposati</h2>
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog" id="w4rs-ring" cx="60" cy="60" r="54"/>
+    </svg>
+    <div class="dial-center">
+      <div class="dial-num" id="w4rs-num">20</div>
+    </div>
+  </div>
+  <div class="rest-next" id="w4rs-next"></div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w4-skip-rest">Salta pausa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 4 — FINE
+     ═══════════════════════════════════════ -->
+<div id="s-w4-end" class="screen">
+  <div class="hero">
+    <div class="end-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <span class="kicker">Grande Paolo</span>
+    <h1>WOD 4<br>Completato</h1>
+    <p>3 giri di functional nel sacco. Full-body acceso — bel lavoro.</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-block" id="btn-w4-home">Torna home</button>
+    <button class="btn btn-primary btn-block" id="btn-w4-again">Rifai</button>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════ -->
 <script>
 "use strict";
 
 /* ── Helpers ── */
-const APP_VERSION = '1';
+const APP_VERSION = '2';
 const $ = id => document.getElementById(id);
 const fmt = s => s >= 60
   ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
@@ -731,7 +850,7 @@ function showScreen(id, barColor){
 function setBarWidth(pct){ fill.style.width = pct + '%'; }
 
 function goHome(){
-  W1.stop(); W2.stop(); W3.stop(); Music.stop();
+  W1.stop(); W2.stop(); W3.stop(); W4.stop(); Music.stop();
   showScreen('s-home');
 }
 
@@ -754,11 +873,22 @@ const buzz = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(_){} 
 
 let wakeLock = null;
 async function requestWakeLock(){
-  try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(_){}
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      // il lock si rilascia da solo (schermo spento, cambio tab): azzera così si riacquisisce
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  }catch(_){}
 }
+// riacquisisci quando il documento torna visibile
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState==='visible' && !wakeLock) requestWakeLock();
 });
+// acquisisci al PRIMO gesto utente ovunque (serve un'interazione), così resta acceso anche in home
+['pointerdown','keydown'].forEach(ev =>
+  document.addEventListener(ev, () => { if(!wakeLock) requestWakeLock(); }, { passive:true })
+);
 
 /* ── Musica generativa (Web Audio) ── */
 const Music = (() => {
@@ -766,6 +896,7 @@ const Music = (() => {
     w1:{ bpm:124, roots:[45,41,48,43], chords:[[57,60,64],[53,57,60],[48,55,60],[50,55,59]] },
     w2:{ bpm:132, roots:[45,40,38,43], chords:[[57,60,64],[56,59,64],[53,57,60],[50,55,59]] },
     w3:{ bpm:68,  roots:[48,43,45,41], chords:[[60,63,67],[55,59,62],[57,60,64],[53,57,60]] }, /* Cm-Gm-Am-Fm slow & serene */
+    w4:{ bpm:128, roots:[43,50,45,48], chords:[[55,59,62],[50,57,62],[57,60,64],[48,55,60]] }, /* driving functional */
   };
   const AHEAD=0.10, TICK=25, VOL=0.14;
   let ctx=null,comp=null,master=null,noise=null;
@@ -1235,10 +1366,131 @@ $('btn-w3-resume').addEventListener('click',    ()=>W3.unpause());
 $('btn-w3-home').addEventListener('click',      ()=>goHome());
 $('btn-w3-again').addEventListener('click',     ()=>{ Music.start('w3'); W3.start(); });
 
+/* ═══════════════════════════════════════
+   WOD 4 — FUNCTIONAL (circuito a tempo)
+   ═══════════════════════════════════════ */
+const W4_ROUNDS = 3;
+const W4_WORK   = 40;
+const W4_REST   = 20;
+const CIRCUIT4 = [
+  { name:'Side Plank Rotation',    lang:'en', steps:['Plank laterale, appoggio su una mano','Ruota il busto passando il braccio sotto','Riapri verso il soffitto — cambia lato a metà'] },
+  { name:'Single-leg Glute Bridge',lang:'en', steps:['Supino, un piede a terra, l\'altra gamba tesa','Spingi l\'anca in alto, stringi il gluteo','Scendi controllando — cambia gamba a metà'] },
+  { name:'Bear Knee-Drive',        lang:'en', steps:['Posizione bear, ginocchia a 2 cm da terra','Guida un ginocchio verso il petto','Alterna con ritmo, schiena piatta'] },
+  { name:'Spider-man Climber',     lang:'en', steps:['In plank alto, corpo in linea','Ginocchio verso il gomito omolaterale','Alterna i lati, bacino basso'] },
+  { name:'Dead Bug',               lang:'en', steps:['Supino, lombare incollata a terra','Allunga gamba e braccio opposti sfiorando terra','Torna al centro e alterna — non inarcare mai la schiena'] },
+];
+const W4_SLOTS = W4_ROUNDS * CIRCUIT4.length;
+
+const W4 = (() => {
+  let round=0, ci=0, timer=null, left=0, paused=false;
+
+  const slot = () => round*CIRCUIT4.length + ci;
+  function countStr(){ return `${ci+1} / ${CIRCUIT4.length}`; }
+  function updateBar(){ setBarWidth(Math.round((slot()/W4_SLOTS)*100)); }
+
+  function preread(){
+    const item = CIRCUIT4[ci];
+    showScreen('s-w4-preread','var(--prep)');
+    $('w4pr-block').textContent = `Giro ${round+1}/${W4_ROUNDS}`;
+    $('w4pr-name').textContent  = item.name;
+    renderSteps($('w4pr-steps'), item.steps);
+    $('w4pr-count').textContent = countStr();
+    updateBar();
+    left=10; primeRing($('w4pr-ring'));
+    setDial($('w4pr-num'),$('w4pr-ring'),left,10);
+    say('Preparati.');
+    clearInterval(timer);
+    timer = setInterval(()=>{ left--; setDial($('w4pr-num'),$('w4pr-ring'),Math.max(0,left),10); if(left<=0){ clearInterval(timer); work(); } },1000);
+  }
+
+  function work(){
+    const item = CIRCUIT4[ci];
+    paused=false;
+    showScreen('s-w4-ex','var(--w4)');
+    $('btn-w4-pause').hidden=false; $('btn-w4-resume').hidden=true;
+    $('w4ex-block').textContent = `Giro ${round+1}/${W4_ROUNDS}`;
+    $('w4ex-name').textContent  = item.name;
+    $('w4ex-dose').textContent  = `${W4_WORK} sec`;
+    $('w4ex-count').textContent = countStr();
+    renderSteps($('w4ex-steps'), item.steps);
+    $('w4ex-dial').classList.remove('ending');
+    updateBar();
+    left=W4_WORK; primeRing($('w4ex-ring'));
+    setDial($('w4ex-num'),$('w4ex-ring'),left,W4_WORK);
+    say(item.name, item.lang); buzz(60);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      if(paused) return;
+      left--; setDial($('w4ex-num'),$('w4ex-ring'),Math.max(0,left),W4_WORK);
+      $('w4ex-dial').classList.toggle('ending', left<=3 && left>0);
+      if(left<=0){ clearInterval(timer); $('w4ex-dial').classList.remove('ending'); afterWork(); }
+    },1000);
+  }
+
+  function afterWork(){
+    if(round===W4_ROUNDS-1 && ci===CIRCUIT4.length-1){ end(); return; }
+    rest();
+  }
+
+  function rest(){
+    // indici del prossimo esercizio
+    let nci=ci+1, nr=round;
+    if(nci>=CIRCUIT4.length){ nci=0; nr=round+1; }
+    showScreen('s-w4-rest','var(--rest)');
+    $('w4rs-count').textContent = `${slot()+1} / ${W4_SLOTS}`;
+    const nxt = CIRCUIT4[nci];
+    const roundNote = nr!==round ? ` · Giro ${nr+1}` : '';
+    $('w4rs-next').innerHTML = `Prossimo: <b>${nxt.name}</b>${roundNote}`;
+    left=W4_REST; primeRing($('w4rs-ring'));
+    setDial($('w4rs-num'),$('w4rs-ring'),left,W4_REST);
+    say('Pausa.'); buzz(30);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      left--; setDial($('w4rs-num'),$('w4rs-ring'),Math.max(0,left),W4_REST);
+      if(left<=0){ clearInterval(timer); ci=nci; round=nr; work(); }
+    },1000);
+  }
+
+  function end(){
+    setBarWidth(100);
+    showScreen('s-w4-end'); bar.classList.remove('on');
+    say('Grande Paolo, finito.'); buzz([80,60,80,60,160]); Music.fadeOut();
+    clearInterval(timer);
+  }
+
+  return {
+    start()    { round=0; ci=0; preread(); },
+    stop()     { clearInterval(timer); timer=null; },
+    skipPrep() { clearInterval(timer); work(); },
+    skipEx()   { clearInterval(timer); afterWork(); },
+    skipRest() {
+      clearInterval(timer);
+      let nci=ci+1, nr=round;
+      if(nci>=CIRCUIT4.length){ nci=0; nr=round+1; }
+      ci=nci; round=nr; work();
+    },
+    pause()    { paused=true;  $('btn-w4-pause').hidden=true;  $('btn-w4-resume').hidden=false; $('w4ex-dial').classList.remove('ending'); },
+    unpause()  { paused=false; $('btn-w4-pause').hidden=false; $('btn-w4-resume').hidden=true; },
+  };
+})();
+
+$('card-w4').addEventListener('click',()=>{
+  requestWakeLock();
+  if(synth) synth.speak(new SpeechSynthesisUtterance(''));
+  Music.start('w4'); W4.start();
+});
+$('btn-w4-skip-prep').addEventListener('click', ()=>W4.skipPrep());
+$('btn-w4-skip-ex').addEventListener('click',   ()=>W4.skipEx());
+$('btn-w4-skip-rest').addEventListener('click', ()=>W4.skipRest());
+$('btn-w4-pause').addEventListener('click',     ()=>W4.pause());
+$('btn-w4-resume').addEventListener('click',    ()=>W4.unpause());
+$('btn-w4-home').addEventListener('click',      ()=>goHome());
+$('btn-w4-again').addEventListener('click',     ()=>{ Music.start('w4'); W4.start(); });
+
 $('ver-badge').textContent = 'v' + APP_VERSION;
 
 /* Accessibilità tastiera per le card */
-[$('card-w1'),$('card-w2'),$('card-w3')].forEach(c=>{
+[$('card-w1'),$('card-w2'),$('card-w3'),$('card-w4')].forEach(c=>{
   c.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') c.click(); });
 });
 </script>

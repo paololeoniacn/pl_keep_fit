@@ -63,3 +63,16 @@ node --check <extracted-script>.js   # syntax
 node -e '<eval workout data>'        # data integrity (all keys resolve, 0 bad items)
 ```
 Open the HTML directly in a browser (VSCode internal browser works). No server needed.
+
+## Deploy (Cloudflare Pages, on-demand)
+
+The app is published to Cloudflare Pages (project `bare`) for a real HTTPS URL —
+required for the screen wake-lock, and for "Add to Home Screen" on the phone.
+
+- **Command**: `./deploy.sh` — copies `BARE.html` → `dist/index.html` and runs
+  `wrangler pages deploy dist --project-name bare`. Only the app is uploaded (no
+  videos/md/screenshots — Pages has a 25 MB/file limit and `NEWS/` holds large videos).
+- **Config**: `wrangler.toml` (`name = "bare"`, `pages_build_output_dir = "dist"`).
+- **Auth (one-time)**: `npx wrangler login` (OAuth) or `CLOUDFLARE_API_TOKEN` env var
+  with **Pages: Edit** permission.
+- `dist/` is a build artifact (gitignored, regenerated each deploy).
