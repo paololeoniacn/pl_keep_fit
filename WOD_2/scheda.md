@@ -2,6 +2,8 @@
 🔥 WOD 2: AMRAP 20 — 100 Push-up · 200 Kick-out · 300 Squat
 Credit: @lookinlab
 
+> **Filosofia:** Motore metabolico — volume e condizione, resistenza sotto fatica.
+
 ⏱️ Come leggere il WOD
 Hai 20 minuti. Fai il circuit in loop continuo senza pause programmate.
 Il tuo obiettivo è completare 20 round esatti:

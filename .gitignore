@@ -11,3 +11,6 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Materiale sorgente pesante (reel Instagram) — ri-scaricabile, non versionato
+NEWS/*.mp4

@@ -1,4 +1,6 @@
 
+> **Filosofia:** Qualità del movimento & allineamento — controllo, mobilità e core anti-lordosi, a basso impatto.
+
 Mettiamo tutto insieme in un'unica Scheda Definitiva Aggiornata, impaginata per il tuo smartphone. Questa include le transizioni di LeoMoves nel Blocco A, l'aggiornamento con i Plank Slider e il nuovo Blocco C per l'effetto "cardio brucia-grassi" senza impatti sulla schiena.
 Fai uno screenshot a questo messaggio o salvalo tra i preferiti:
 ⬇️ SCROLLA PER INIZIARE ⬇️

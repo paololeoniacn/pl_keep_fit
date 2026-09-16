@@ -1,6 +1,8 @@
 
 🌙 ESERCIZI PRE-SONNO (Da fare a letto - 10 Minuti)
 Decongestione lombare anti-lordosi per un sonno profondo.
+
+> **Filosofia:** Recupero & decompressione — sistema nervoso a riposo, colonna decompressa.
 1. 🌬️ Respirazione Diaframmatica Passiva: 3 minuti. Supino. Inspira gonfiando la pancia, espira appiattendo completamente la schiena al materasso.
 2. 🦋 Supine Butterfly: 90". Piante dei piedi unite, ginocchia aperte che cadono ai lati.
 3. 🌪️ Gentle Spinal Twist: 60" per lato. Supino, ginocchia piegate che cadono da un lato, testa dall'altro. Braccia a T.

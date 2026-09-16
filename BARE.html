@@ -1,4 +1,4 @@
-<!-- BARE v2 —— bump VERSION in JS when releasing -->
+<!-- BARE v9 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -20,11 +20,15 @@
   --w2:   oklch(0.72  0.205  32);   /* arancio-rosso */
   --w3:   oklch(0.68  0.135 295);   /* lavanda/notte */
   --w4:   oklch(0.80  0.135 200);   /* ciano/functional */
+  --w6:   oklch(0.70  0.185 350);   /* magenta/core */
   --prep: oklch(0.78  0.165  66);
   --rest: oklch(0.68  0.165 255);
   --phase: var(--w1);
 
   --r:    16px;
+  /* Scala di spaziatura (4pt) — usare questi, non valori arbitrari */
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem;
+  --sp-5:1.5rem; --sp-6:2rem;  --sp-8:3rem;
   --ease: cubic-bezier(0.22,1,0.36,1);
   --z-fixed: 50; --z-bar: 40;
 }
@@ -95,6 +99,19 @@ body{
   opacity:0; transition:opacity .3s var(--ease);
 }
 #session-bar.on{ opacity:1; }
+
+/* ── Toast ── */
+.toast{
+  position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 1.5rem);
+  transform:translate(-50%, 1rem); z-index:var(--z-fixed);
+  background:var(--surface-2); color:var(--ink);
+  border:1px solid var(--line); border-radius:12px;
+  padding:.7rem 1.1rem; font-size:.9rem; font-weight:600;
+  box-shadow:0 10px 30px -12px black;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s var(--ease), transform .2s var(--ease);
+}
+.toast.show{ opacity:1; transform:translate(-50%, 0); }
 #session-fill{
   height:100%; width:0%;
   border-radius:0 2px 2px 0;
@@ -116,14 +133,18 @@ body{
 
 .wod-cards{ width:100%; max-width:34rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
 
-.ver-badge{
-  width:100%; max-width:34rem;
-  margin-left:auto; margin-right:auto;
-  text-align:right; padding-top:.5rem;
-  font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
-  color:oklch(0.6 0 0 / .35);
+.app-footer{
+  width:100%; max-width:34rem; margin:var(--sp-6) auto 0;
+  padding-top:var(--sp-4); border-top:1px solid var(--line);
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:.35rem .6rem;
+  font-size:.72rem; letter-spacing:.03em; color:var(--faint);
   user-select:none;
 }
+.app-footer .foot-name{ font-weight:750; color:var(--muted); }
+.app-footer .foot-motto{ font-style:italic; }
+.app-footer .foot-ver{ font-variant-numeric:tabular-nums; }
+.app-footer .foot-sep{ opacity:.45; }
 
 .wod-card{
   position:relative; background:var(--surface);
@@ -186,14 +207,14 @@ body{
 .s-count{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
 
 .ex-title{
-  width:100%; max-width:34rem; margin-top:.8rem;
+  width:100%; max-width:34rem; margin-top:var(--sp-4);
   font-size:clamp(1.55rem,6.5vw,2.1rem);
   font-weight:800; letter-spacing:-.025em; line-height:1.05; text-wrap:balance;
 }
 .steps{
   list-style:none; counter-reset:s;
-  width:100%; max-width:32rem; margin-top:.9rem;
-  display:flex; flex-direction:column; gap:.45rem; text-align:left;
+  width:100%; max-width:32rem; margin-top:var(--sp-3);
+  display:flex; flex-direction:column; gap:var(--sp-2); text-align:left;
 }
 .steps li{
   counter-increment:s; display:flex; gap:.7rem; align-items:flex-start;
@@ -218,13 +239,15 @@ body{
 }
 .cue::before{ content:'▸'; font-weight:900; }
 
-/* Quadrante timer */
+/* Quadrante timer — cerchio + label sotto, centrati come gruppo */
+.dial-wrap{
+  width:100%; max-width:34rem; margin:auto; flex:none;
+  display:flex; flex-direction:column; align-items:center; gap:var(--sp-4);
+}
 .dial{
-  position:relative; margin:auto; /* centra orizzontalmente E spinge verticalmente */
+  position:relative; flex:none;
   width:clamp(180px,38vh,290px); aspect-ratio:1;
-  display:grid; place-items:center; flex:none;
-  align-self:center; /* centra sull'asse trasversale senza align-items sul padre */
-  max-width:none; /* annulla la regola .screen > * */
+  display:grid; place-items:center;
 }
 .dial::before{
   content:''; position:absolute; inset:-14%;
@@ -239,19 +262,21 @@ body{
   transition:stroke-dashoffset .95s linear;
   filter:drop-shadow(0 0 6px color-mix(in oklch,var(--phase) 55%,transparent));
 }
-.dial-center{ position:absolute; inset:0; display:grid; place-content:center; gap:.35rem; }
+/* Solo il numero, centrato nell'anello */
+.dial-center{ position:absolute; inset:0; display:grid; place-content:center; }
 .dial-num{
   font-size:clamp(3.2rem,14vw,4.8rem); font-weight:800;
   font-variant-numeric:tabular-nums; letter-spacing:-.04em; line-height:1;
   color:var(--phase);
 }
+/* La label (dose / "Preparati") sotto il cerchio, nel flusso */
 .dose{
-  justify-self:center;
+  white-space:nowrap;
   font-size:.82rem; font-weight:700; letter-spacing:.02em;
   color:var(--ink);
   background:color-mix(in oklch,var(--phase) 16%,transparent);
   border:1px solid color-mix(in oklch,var(--phase) 30%,transparent);
-  padding:.3rem .7rem; border-radius:999px; max-width:16rem;
+  padding:.3rem .8rem; border-radius:999px;
 }
 .dial.ending .dial-num{ animation:tick .9s var(--ease) infinite; }
 @keyframes tick{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
@@ -262,9 +287,29 @@ body{
 /* Controlli — spinti in fondo con margin-top:auto */
 .controls{
   width:100%; max-width:34rem;
-  margin-top:auto; padding-top:.9rem;
-  display:flex; gap:.6rem;
+  margin-top:auto; padding-top:var(--sp-4);
+  display:flex; flex-wrap:wrap; column-gap:var(--sp-2); row-gap:var(--sp-3);
 }
+.controls .btn-share{ flex:1 0 100%; }
+.btn-share svg{ width:18px; height:18px; margin-right:.1rem; }
+
+/* Fine WOD: Condividi resta primario, Home/Rifai scendono a secondari (più leggeri e bassi) */
+.hero ~ .controls{ row-gap:var(--sp-4); }
+.hero ~ .controls .btn:not(.btn-primary){
+  min-height:52px; background:transparent; color:var(--muted); font-weight:700;
+}
+.hero ~ .controls .btn:not(.btn-primary):active{ background:var(--surface); }
+
+/* Chiudi in anticipo e registra il parziale — azione terziaria in fondo */
+.giveup-btn{
+  width:100%; max-width:34rem; margin:var(--sp-4) auto 0; flex:none;
+  background:none; border:none; color:var(--faint);
+  font-size:.78rem; font-weight:600; padding:.5rem; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:.35rem;
+}
+.giveup-btn span{ text-decoration:underline; text-underline-offset:3px; }
+.giveup-btn svg{ width:14px; height:14px; opacity:.7; }
+.giveup-btn:active{ color:var(--muted); }
 .btn{
   flex:1; min-height:60px;
   display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
@@ -290,7 +335,7 @@ body{
 [hidden]{ display:none !important; }
 
 /* Fine */
-.hero{ flex:1; margin:0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.1rem; text-align:center; }
+.hero{ flex:1; margin:0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--sp-4); text-align:center; }
 .hero h1{ font-size:clamp(2rem,9vw,2.9rem); font-weight:850; letter-spacing:-.03em; line-height:1.02; text-wrap:balance; }
 .hero p{ font-size:1rem; line-height:1.5; color:var(--muted); max-width:30rem; }
 .kicker{ font-size:.78rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--phase); }
@@ -367,6 +412,10 @@ body{
 #s-w4-rest   { --phase:var(--rest); }
 #s-w4-ex     { --phase:var(--w4);  }
 #s-w4-end    { --phase:var(--w4);  }
+#s-w6-preread{ --phase:var(--prep); }
+#s-w6-rest   { --phase:var(--rest); }
+#s-w6-ex     { --phase:var(--w6);  }
+#s-w6-end    { --phase:var(--w6);  }
 
 /* Schermo basso */
 @media(max-height:680px){
@@ -393,6 +442,7 @@ body{
   <svg class="i-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m17 9 6 6"/><path d="m23 9-6 6"/></svg>
 </button>
 <div id="session-bar"><div id="session-fill"></div></div>
+<div id="toast" class="toast"></div>
 
 <!-- ═══════════════════════════════════════
      HOME
@@ -443,17 +493,35 @@ body{
     <div class="wod-card" id="card-w4" style="--c:var(--w4)" role="button" tabindex="0">
       <div class="wod-num">WOD 4</div>
       <div class="wod-name">Functional</div>
-      <div class="wod-sub">Circuito a corpo libero: side plank, glute bridge, bear, spider-man, dead bug. 40&Prime; lavoro / 20&Prime; recupero, 3 giri.</div>
+      <div class="wod-sub">Circuito full-body di 7 movimenti: plank flow, cossack squat, glute bridge, plank leg raise, bear, spider-man, dead bug. 40&Prime; lavoro / 20&Prime; recupero, 3 giri.</div>
       <div class="wod-tags">
-        <span class="tag tag-accent">≈ 15 min</span>
+        <span class="tag tag-accent">≈ 20 min</span>
         <span class="tag">Circuito</span>
-        <span class="tag">Core · Glutei · Full-body</span>
+        <span class="tag">Full-body · Mobilità · Core</span>
+      </div>
+      <span class="wod-arrow">›</span>
+    </div>
+
+    <div class="wod-card" id="card-w6" style="--c:var(--w6)" role="button" tabindex="0">
+      <div class="wod-num">WOD 6</div>
+      <div class="wod-name">Core Engine</div>
+      <div class="wod-sub">Solo core, corto e completo: transizioni + esplosività + stabilità. Sit-through, hollow, tuck-up, bird-dog, plank-to-pike, mountain climber. 30&Prime;/15&Prime;, 2 giri.</div>
+      <div class="wod-tags">
+        <span class="tag tag-accent">≈ 9 min</span>
+        <span class="tag">Core</span>
+        <span class="tag">Stabilità · Propriocezione · Forza</span>
       </div>
       <span class="wod-arrow">›</span>
     </div>
 
   </div>
-  <div class="ver-badge" id="ver-badge"></div>
+  <footer class="app-footer">
+    <span class="foot-name">Paolo</span>
+    <span class="foot-sep">·</span>
+    <span class="foot-motto">sic semper pigritiae</span>
+    <span class="foot-sep">·</span>
+    <span class="foot-ver" id="ver-badge"></span>
+  </footer>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -467,15 +535,17 @@ body{
   <h2 class="ex-title" id="w1pr-name"></h2>
   <div class="cue" id="w1pr-ref" hidden></div>
   <ol class="steps" id="w1pr-steps"></ol>
-  <div class="dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w1pr-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w1pr-num">10</div>
-      <div class="dose">Preparati</div>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w1pr-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w1pr-num">10</div>
+      </div>
     </div>
+    <div class="dose">Preparati</div>
   </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w1-skip-prep">Salta attesa &nbsp;›</button>
@@ -493,15 +563,17 @@ body{
   <h2 class="ex-title" id="w1ex-name"></h2>
   <ol class="steps" id="w1ex-steps"></ol>
   <div class="cue" id="w1ex-cue" hidden></div>
-  <div class="dial" id="w1ex-dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w1ex-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w1ex-num">00</div>
-      <div class="dose" id="w1ex-dose"></div>
+  <div class="dial-wrap">
+    <div class="dial" id="w1ex-dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w1ex-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w1ex-num">00</div>
+      </div>
     </div>
+    <div class="dose" id="w1ex-dose"></div>
   </div>
   <div class="controls">
     <button class="btn btn-ghost" id="btn-w1-restart" aria-label="Ricomincia">
@@ -519,6 +591,10 @@ body{
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
     </button>
   </div>
+  <button class="giveup-btn" id="btn-w1-giveup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    <span>Termina e registra</span>
+  </button>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -530,13 +606,15 @@ body{
     <span class="s-count" id="w1rs-count"></span>
   </div>
   <h2 class="ex-title">Riposati</h2>
-  <div class="dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w1rs-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w1rs-num">60</div>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w1rs-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w1rs-num">60</div>
+      </div>
     </div>
   </div>
   <div class="rest-next" id="w1rs-next"></div>
@@ -554,12 +632,16 @@ body{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
     <span class="kicker">Grande Paolo</span>
-    <h1>WOD 1<br>Completato</h1>
-    <p>Ottimo lavoro su addome e allineamento. Stasera ricorda la routine pre-sonno anti-lordosi.</p>
+    <h1 id="w1-end-h1">WOD 1<br>Completato</h1>
+    <p id="w1-end-msg">Ottimo lavoro su addome e allineamento. Stasera ricorda la routine pre-sonno anti-lordosi.</p>
   </div>
   <div class="controls">
+    <button class="btn btn-primary btn-block btn-share" id="btn-w1-share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+      Condividi
+    </button>
     <button class="btn btn-block" id="btn-w1-home">Torna home</button>
-    <button class="btn btn-primary btn-block" id="btn-w1-again">Rifai</button>
+    <button class="btn btn-block" id="btn-w1-again">Rifai</button>
   </div>
 </div>
 
@@ -583,9 +665,9 @@ body{
   </div>
 
   <div class="w2-circuit">
-    <div class="c-pill on" id="cp-0">Push-up<small>5 rep</small></div>
-    <div class="c-pill"    id="cp-1">Kick-out<small>10 rep</small></div>
-    <div class="c-pill"    id="cp-2">Squat<small>15 rep</small></div>
+    <div class="c-pill on" id="cp-0">Push-up<small>0 / 100</small></div>
+    <div class="c-pill"    id="cp-1">Kick-out<small>0 / 200</small></div>
+    <div class="c-pill"    id="cp-2">Squat<small>0 / 300</small></div>
   </div>
 
   <div class="controls">
@@ -599,6 +681,10 @@ body{
       FATTO &nbsp;✓
     </button>
   </div>
+  <button class="giveup-btn" id="btn-w2-giveup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    <span>Mi arrendo</span>
+  </button>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -610,7 +696,7 @@ body{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
     <span class="kicker">Grande Paolo</span>
-    <h1>WOD 2<br>Completato</h1>
+    <h1 id="w2-end-h1">WOD 2<br>Completato</h1>
     <div class="stat-row">
       <div class="stat"><div class="stat-n" id="w2-stat-rounds">0</div><div class="stat-l">Round</div></div>
       <div class="stat"><div class="stat-n" id="w2-stat-reps">0</div><div class="stat-l">Reps</div></div>
@@ -618,8 +704,12 @@ body{
     <p id="w2-end-msg"></p>
   </div>
   <div class="controls">
+    <button class="btn btn-primary btn-block btn-share" id="btn-w2-share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+      Condividi
+    </button>
     <button class="btn btn-block" id="btn-w2-home">Torna home</button>
-    <button class="btn btn-primary btn-block" id="btn-w2-again">Rifai</button>
+    <button class="btn btn-block" id="btn-w2-again">Rifai</button>
   </div>
 </div>
 
@@ -633,15 +723,17 @@ body{
   </div>
   <h2 class="ex-title" id="w3pr-name"></h2>
   <ol class="steps" id="w3pr-steps"></ol>
-  <div class="dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w3pr-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w3pr-num">10</div>
-      <div class="dose">Preparati</div>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w3pr-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w3pr-num">10</div>
+      </div>
     </div>
+    <div class="dose">Preparati</div>
   </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w3-skip-prep">Salta attesa &nbsp;›</button>
@@ -658,15 +750,17 @@ body{
   </div>
   <h2 class="ex-title" id="w3ex-name"></h2>
   <ol class="steps" id="w3ex-steps"></ol>
-  <div class="dial" id="w3ex-dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w3ex-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w3ex-num">00</div>
-      <div class="dose" id="w3ex-dose"></div>
+  <div class="dial-wrap">
+    <div class="dial" id="w3ex-dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w3ex-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w3ex-num">00</div>
+      </div>
     </div>
+    <div class="dose" id="w3ex-dose"></div>
   </div>
   <div class="controls">
     <button class="btn btn-ghost" id="btn-w3-skip-ex" aria-label="Salta">
@@ -696,8 +790,12 @@ body{
     <p>Schiena decompessa, sistema nervoso a riposo. Dormi bene.</p>
   </div>
   <div class="controls">
+    <button class="btn btn-primary btn-block btn-share" id="btn-w3-share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+      Condividi
+    </button>
     <button class="btn btn-block" id="btn-w3-home">Torna home</button>
-    <button class="btn btn-primary btn-block" id="btn-w3-again">Rifai</button>
+    <button class="btn btn-block" id="btn-w3-again">Rifai</button>
   </div>
 </div>
 
@@ -711,15 +809,17 @@ body{
   </div>
   <h2 class="ex-title" id="w4pr-name"></h2>
   <ol class="steps" id="w4pr-steps"></ol>
-  <div class="dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w4pr-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w4pr-num">10</div>
-      <div class="dose">Preparati</div>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w4pr-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w4pr-num">10</div>
+      </div>
     </div>
+    <div class="dose">Preparati</div>
   </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w4-skip-prep">Salta attesa &nbsp;›</button>
@@ -736,15 +836,17 @@ body{
   </div>
   <h2 class="ex-title" id="w4ex-name"></h2>
   <ol class="steps" id="w4ex-steps"></ol>
-  <div class="dial" id="w4ex-dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w4ex-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w4ex-num">00</div>
-      <div class="dose" id="w4ex-dose"></div>
+  <div class="dial-wrap">
+    <div class="dial" id="w4ex-dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w4ex-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w4ex-num">00</div>
+      </div>
     </div>
+    <div class="dose" id="w4ex-dose"></div>
   </div>
   <div class="controls">
     <button class="btn btn-primary" id="btn-w4-pause">
@@ -759,6 +861,10 @@ body{
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
     </button>
   </div>
+  <button class="giveup-btn" id="btn-w4-giveup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    <span>Termina e registra</span>
+  </button>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -770,13 +876,15 @@ body{
     <span class="s-count" id="w4rs-count"></span>
   </div>
   <h2 class="ex-title">Riposati</h2>
-  <div class="dial">
-    <svg class="ring" viewBox="0 0 120 120">
-      <circle class="ring-track" cx="60" cy="60" r="54"/>
-      <circle class="ring-prog" id="w4rs-ring" cx="60" cy="60" r="54"/>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-num" id="w4rs-num">20</div>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w4rs-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w4rs-num">20</div>
+      </div>
     </div>
   </div>
   <div class="rest-next" id="w4rs-next"></div>
@@ -794,12 +902,132 @@ body{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
     <span class="kicker">Grande Paolo</span>
-    <h1>WOD 4<br>Completato</h1>
-    <p>3 giri di functional nel sacco. Full-body acceso — bel lavoro.</p>
+    <h1 id="w4-end-h1">WOD 4<br>Completato</h1>
+    <p id="w4-end-msg">3 giri di functional nel sacco. Full-body acceso — bel lavoro.</p>
   </div>
   <div class="controls">
+    <button class="btn btn-primary btn-block btn-share" id="btn-w4-share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+      Condividi
+    </button>
     <button class="btn btn-block" id="btn-w4-home">Torna home</button>
-    <button class="btn btn-primary btn-block" id="btn-w4-again">Rifai</button>
+    <button class="btn btn-block" id="btn-w4-again">Rifai</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 6 — PREPARATI
+     ═══════════════════════════════════════ -->
+<div id="s-w6-preread" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w6pr-block"></span></span>
+    <span class="s-count" id="w6pr-count"></span>
+  </div>
+  <h2 class="ex-title" id="w6pr-name"></h2>
+  <ol class="steps" id="w6pr-steps"></ol>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w6pr-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w6pr-num">10</div>
+      </div>
+    </div>
+    <div class="dose">Preparati</div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w6-skip-prep">Salta attesa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 6 — ESERCIZIO
+     ═══════════════════════════════════════ -->
+<div id="s-w6-ex" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span id="w6ex-block"></span></span>
+    <span class="s-count" id="w6ex-count"></span>
+  </div>
+  <h2 class="ex-title" id="w6ex-name"></h2>
+  <ol class="steps" id="w6ex-steps"></ol>
+  <div class="dial-wrap">
+    <div class="dial" id="w6ex-dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w6ex-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w6ex-num">00</div>
+      </div>
+    </div>
+    <div class="dose" id="w6ex-dose"></div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-w6-pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      Pausa
+    </button>
+    <button class="btn btn-primary" id="btn-w6-resume" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Riprendi
+    </button>
+    <button class="btn btn-ghost" id="btn-w6-skip-ex" aria-label="Salta">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>
+    </button>
+  </div>
+  <button class="giveup-btn" id="btn-w6-giveup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    <span>Termina e registra</span>
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 6 — RECUPERO
+     ═══════════════════════════════════════ -->
+<div id="s-w6-rest" class="screen">
+  <div class="s-head">
+    <span class="s-phase"><i class="s-dot"></i><span>Recupero</span></span>
+    <span class="s-count" id="w6rs-count"></span>
+  </div>
+  <h2 class="ex-title">Riposati</h2>
+  <div class="dial-wrap">
+    <div class="dial">
+      <svg class="ring" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="w6rs-ring" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-num" id="w6rs-num">15</div>
+      </div>
+    </div>
+  </div>
+  <div class="rest-next" id="w6rs-next"></div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block" id="btn-w6-skip-rest">Salta pausa &nbsp;›</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     WOD 6 — FINE
+     ═══════════════════════════════════════ -->
+<div id="s-w6-end" class="screen">
+  <div class="hero">
+    <div class="end-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <span class="kicker">Grande Paolo</span>
+    <h1 id="w6-end-h1">Core<br>Acceso</h1>
+    <p id="w6-end-msg">Centro del corpo allenato: il transfer va su tutto il resto. Corto ma tosto.</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-primary btn-block btn-share" id="btn-w6-share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+      Condividi
+    </button>
+    <button class="btn btn-block" id="btn-w6-home">Torna home</button>
+    <button class="btn btn-block" id="btn-w6-again">Rifai</button>
   </div>
 </div>
 
@@ -808,7 +1036,7 @@ body{
 "use strict";
 
 /* ── Helpers ── */
-const APP_VERSION = '2';
+const APP_VERSION = '9';
 const $ = id => document.getElementById(id);
 const fmt = s => s >= 60
   ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
@@ -850,7 +1078,7 @@ function showScreen(id, barColor){
 function setBarWidth(pct){ fill.style.width = pct + '%'; }
 
 function goHome(){
-  W1.stop(); W2.stop(); W3.stop(); W4.stop(); Music.stop();
+  W1.stop(); W2.stop(); W3.stop(); W4.stop(); W6.stop(); Music.stop();
   showScreen('s-home');
 }
 
@@ -870,6 +1098,24 @@ function say(txt, lang){
   synth.speak(u);
 }
 const buzz = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(_){} };
+
+/* ── Condivisione risultati ── */
+let wodStartedAt = 0;   // impostato all'avvio di ogni WOD
+let lastShare = '';     // messaggio dell'ultimo WOD finito
+const shareDate = () => new Date().toLocaleDateString('it-IT');
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1900);
+}
+async function shareResult(){
+  if(!lastShare) return;
+  if(navigator.share){
+    try{ await navigator.share({ text: lastShare }); }catch(_){}  // annullato dall'utente: ok
+    return;
+  }
+  try{ await navigator.clipboard.writeText(lastShare); toast('Risultato copiato'); }
+  catch(_){ toast('Copia non riuscita'); }
+}
 
 let wakeLock = null;
 async function requestWakeLock(){
@@ -897,6 +1143,7 @@ const Music = (() => {
     w2:{ bpm:132, roots:[45,40,38,43], chords:[[57,60,64],[56,59,64],[53,57,60],[50,55,59]] },
     w3:{ bpm:68,  roots:[48,43,45,41], chords:[[60,63,67],[55,59,62],[57,60,64],[53,57,60]] }, /* Cm-Gm-Am-Fm slow & serene */
     w4:{ bpm:128, roots:[43,50,45,48], chords:[[55,59,62],[50,57,62],[57,60,64],[48,55,60]] }, /* driving functional */
+    w6:{ bpm:136, roots:[45,45,43,50], chords:[[57,60,64],[57,61,64],[55,59,62],[50,57,62]] }, /* punchy core */
   };
   const AHEAD=0.10, TICK=25, VOL=0.14;
   let ctx=null,comp=null,master=null,noise=null;
@@ -1069,7 +1316,7 @@ const exDoneUpTo  = idx => WOD1.slice(0,idx).filter(i=>i.type==='ex').length;
    WOD 1 — ENGINE
    ═══════════════════════════════════════ */
 const W1 = (() => {
-  let idx=0, timer=null, left=0, paused=false;
+  let idx=0, timer=null, left=0, paused=false, gaveUp=false;
 
   function updateBar(){ setBarWidth(Math.round((idx/WOD1.length)*100)); }
   function countStr()  { return `${exDoneUpTo(idx)} / ${W1_TOTAL_EX}`; }
@@ -1137,12 +1384,25 @@ const W1 = (() => {
 
   function end(){
     showScreen('s-w1-end'); bar.classList.remove('on');
-    say('Grande Paolo, finito.'); buzz([80,60,80,60,160]); Music.fadeOut();
+    buzz([80,60,80,60,160]); Music.fadeOut();
     clearInterval(timer);
+    const t = fmt(Math.round((Date.now()-wodStartedAt)/1000));
+    if(gaveUp){
+      $('w1-end-h1').innerHTML   = 'Sessione<br>interrotta';
+      $('w1-end-msg').textContent= `Arreso a ${t} — ${exDoneUpTo(idx)}/${W1_TOTAL_EX} esercizi.`;
+      lastShare = `BARE · WOD 1 — Asciuga & Allinea\nArreso a ${t} · ${exDoneUpTo(idx)}/${W1_TOTAL_EX} esercizi\n${shareDate()}`;
+      say('Ok, ci fermiamo qui.');
+    } else {
+      $('w1-end-h1').innerHTML   = 'WOD 1<br>Completato';
+      $('w1-end-msg').textContent= 'Ottimo lavoro su addome e allineamento. Stasera ricorda la routine pre-sonno anti-lordosi.';
+      lastShare = `BARE · WOD 1 — Asciuga & Allinea\nTempo: ${t}\n${W1_TOTAL_EX} esercizi · ${shareDate()}`;
+      say('Grande Paolo, finito.');
+    }
   }
 
   return {
-    start()      { idx=0; next(); },
+    start()      { idx=0; gaveUp=false; wodStartedAt=Date.now(); next(); },
+    giveUp()     { clearInterval(timer); gaveUp=true; end(); },
     stop()       { clearInterval(timer); timer=null; },
     skipPrep()   { clearInterval(timer); exercise(WOD1[idx-1]); },
     skipRest()   { clearInterval(timer); next(); },
@@ -1164,6 +1424,8 @@ $('btn-w1-skip-ex').addEventListener('click',    ()=>W1.skipEx());
 $('btn-w1-pause').addEventListener('click',      ()=>W1.pause());
 $('btn-w1-resume').addEventListener('click',     ()=>W1.unpause());
 $('btn-w1-restart').addEventListener('click',   ()=>W1.restart());
+$('btn-w1-giveup').addEventListener('click',     ()=>W1.giveUp());
+$('btn-w1-share').addEventListener('click',      ()=>shareResult());
 $('btn-w1-home').addEventListener('click',       ()=>goHome());
 $('btn-w1-again').addEventListener('click',      ()=>{ Music.start('w1'); W1.start(); });
 
@@ -1182,8 +1444,8 @@ const W2_TARGET = 20;
    WOD 2 — ENGINE
    ═══════════════════════════════════════ */
 const W2 = (() => {
-  let gtimer=null, left=0, paused=false;
-  let ci=0, round=0, totalReps=0;
+  let gtimer=null, left=0, paused=false, gaveUp=false;
+  let ci=0, round=0, totalReps=0, doneReps=[0,0,0];
 
   const pauseSVG  = '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
   const playSVG   = '<path d="M8 5v14l11-7z"/>';
@@ -1193,19 +1455,16 @@ const W2 = (() => {
     $('w2-ex-name').textContent  = c.name;
     $('w2-reps').textContent     = c.reps;
     $('w2-round-lbl').textContent= `Round ${round+1}`;
-    $('w2-stats').textContent    = `${totalReps} rep · ${round} round`;
+    $('w2-stats').textContent    = `${round} round · ${totalReps} rep totali`;
     renderSteps($('w2-steps'), c.steps);
-    CIRCUIT.forEach((_,i)=>{
-      const p=$(`cp-${i}`);
-      p.classList.toggle('on',   i===ci);
-      p.classList.toggle('done', i<ci && ci>0 || (round>0 && i>=ci));
-    });
-    // semplifica: pill active = corrente
-    CIRCUIT.forEach((_,i)=>{
+    // ogni pill: progresso per-esercizio verso il suo target (100 / 200 / 300)
+    CIRCUIT.forEach((c2,i)=>{
       const p=$(`cp-${i}`);
       p.classList.remove('on','done');
-      if(i===ci)   p.classList.add('on');
+      if(i===ci)    p.classList.add('on');
       else if(i<ci) p.classList.add('done');
+      const target = c2.reps * W2_TARGET;
+      p.querySelector('small').textContent = `${doneReps[i]} / ${target}`;
     });
   }
 
@@ -1219,19 +1478,29 @@ const W2 = (() => {
     showScreen('s-w2-end'); bar.classList.remove('on');
     $('w2-stat-rounds').textContent = round;
     $('w2-stat-reps').textContent   = totalReps;
-    const score = round>=W2_TARGET ? 'TARGET CENTRATO! 100-200-300 completi. 🔥'
+    const elapsed = fmt(W2_TOTAL-left);
+    const breakdown = `Push-up ${doneReps[0]}/100 · Kick-out ${doneReps[1]}/200 · Squat ${doneReps[2]}/300`;
+    if(gaveUp){
+      $('w2-end-h1').innerHTML    = 'Sessione<br>interrotta';
+      $('w2-end-msg').textContent = `Arreso a ${elapsed} — ${round} round, ${totalReps} rep.`;
+      lastShare = `BARE · WOD 2 — 100·200·300\nArreso a ${elapsed} (AMRAP 20')\n${round} round · ${totalReps} rep\n${breakdown}\n${shareDate()}`;
+      say('Ok, ci fermiamo qui.');
+    } else {
+      $('w2-end-h1').innerHTML    = 'WOD 2<br>Completato';
+      $('w2-end-msg').textContent = round>=W2_TARGET ? 'TARGET CENTRATO! 100-200-300 completi. 🔥'
                 : round>=18        ? 'Quasi target! Ci sei quasi.'
                 : round>=15        ? 'Ottima sessione! Più della metà fatta.'
                 : round>=10        ? 'Buona base. La prossima vai ancora più forte.'
                 :                    'Hai iniziato — è già una vittoria.';
-    $('w2-end-msg').textContent = score;
-    say(`Grande Paolo, finito. Hai completato ${round} round.`);
+      lastShare = `BARE · WOD 2 — 100·200·300\nTempo: ${elapsed} (AMRAP 20')\n${round} round · ${totalReps} rep\n${breakdown}\n${shareDate()}`;
+      say(`Grande Paolo, finito. Hai completato ${round} round.`);
+    }
     buzz([80,60,80,60,160]); Music.fadeOut();
   }
 
   return {
     start(){
-      ci=0; round=0; totalReps=0; paused=false; left=W2_TOTAL;
+      ci=0; round=0; totalReps=0; doneReps=[0,0,0]; paused=false; gaveUp=false; left=W2_TOTAL;
       showScreen('s-w2-main','var(--w2)');
       render(); updateClock();
       say('Via!'); buzz(60);
@@ -1246,8 +1515,10 @@ const W2 = (() => {
       },1000);
     },
     stop(){ clearInterval(gtimer); gtimer=null; },
+    giveUp(){ clearInterval(gtimer); gaveUp=true; endWOD(); },
     fatto(){
-      totalReps += CIRCUIT[ci].reps;
+      doneReps[ci] += CIRCUIT[ci].reps;
+      totalReps    += CIRCUIT[ci].reps;
       ci++;
       if(ci>=CIRCUIT.length){
         ci=0; round++;
@@ -1272,6 +1543,8 @@ $('card-w2').addEventListener('click',()=>{
 });
 $('btn-w2-fatto').addEventListener('click',  ()=>W2.fatto());
 $('btn-w2-pause').addEventListener('click',  ()=>W2.togglePause());
+$('btn-w2-giveup').addEventListener('click', ()=>W2.giveUp());
+$('btn-w2-share').addEventListener('click',  ()=>shareResult());
 $('btn-w2-home').addEventListener('click',   ()=>goHome());
 $('btn-w2-again').addEventListener('click',  ()=>{ Music.start('w2'); W2.start(); });
 
@@ -1342,10 +1615,11 @@ const W3 = (() => {
     showScreen('s-w3-end'); bar.classList.remove('on');
     say('Buona notte Paolo.'); buzz([40,30,80]); Music.fadeOut();
     clearInterval(timer);
+    lastShare = `BARE · WOD 3 — Pre-Sonno\nTempo: ${fmt(Math.round((Date.now()-wodStartedAt)/1000))}\n${shareDate()}`;
   }
 
   return {
-    start()    { idx=0; preread(WOD3[idx]); },
+    start()    { idx=0; wodStartedAt=Date.now(); preread(WOD3[idx]); },
     stop()     { clearInterval(timer); timer=null; },
     skipPrep() { clearInterval(timer); exercise(WOD3[idx]); },
     skipEx()   { clearInterval(timer); next(); },
@@ -1363,6 +1637,7 @@ $('btn-w3-skip-prep').addEventListener('click', ()=>W3.skipPrep());
 $('btn-w3-skip-ex').addEventListener('click',   ()=>W3.skipEx());
 $('btn-w3-pause').addEventListener('click',     ()=>W3.pause());
 $('btn-w3-resume').addEventListener('click',    ()=>W3.unpause());
+$('btn-w3-share').addEventListener('click',     ()=>shareResult());
 $('btn-w3-home').addEventListener('click',      ()=>goHome());
 $('btn-w3-again').addEventListener('click',     ()=>{ Music.start('w3'); W3.start(); });
 
@@ -1373,8 +1648,10 @@ const W4_ROUNDS = 3;
 const W4_WORK   = 40;
 const W4_REST   = 20;
 const CIRCUIT4 = [
-  { name:'Side Plank Rotation',    lang:'en', steps:['Plank laterale, appoggio su una mano','Ruota il busto passando il braccio sotto','Riapri verso il soffitto — cambia lato a metà'] },
+  { name:'Plank to Down-Dog',      lang:'en', steps:['Da plank alto, spingi i fianchi in alto (down-dog)','Torna in plank controllando','Aggiungi una rotazione del busto a ogni ripetizione'] },
+  { name:'Cossack Squat',          lang:'en', steps:['Piedi molto larghi, punte in fuori','Scendi su una gamba, l\'altra tesa','Sposta il peso da un lato all\'altro'] },
   { name:'Single-leg Glute Bridge',lang:'en', steps:['Supino, un piede a terra, l\'altra gamba tesa','Spingi l\'anca in alto, stringi il gluteo','Scendi controllando — cambia gamba a metà'] },
+  { name:'Plank Leg Raise',        lang:'en', steps:['In plank alto, corpo in linea','Solleva una gamba tesa in alto, stringi il gluteo','Alterna le gambe, bacino fermo'] },
   { name:'Bear Knee-Drive',        lang:'en', steps:['Posizione bear, ginocchia a 2 cm da terra','Guida un ginocchio verso il petto','Alterna con ritmo, schiena piatta'] },
   { name:'Spider-man Climber',     lang:'en', steps:['In plank alto, corpo in linea','Ginocchio verso il gomito omolaterale','Alterna i lati, bacino basso'] },
   { name:'Dead Bug',               lang:'en', steps:['Supino, lombare incollata a terra','Allunga gamba e braccio opposti sfiorando terra','Torna al centro e alterna — non inarcare mai la schiena'] },
@@ -1382,7 +1659,7 @@ const CIRCUIT4 = [
 const W4_SLOTS = W4_ROUNDS * CIRCUIT4.length;
 
 const W4 = (() => {
-  let round=0, ci=0, timer=null, left=0, paused=false;
+  let round=0, ci=0, timer=null, left=0, paused=false, gaveUp=false;
 
   const slot = () => round*CIRCUIT4.length + ci;
   function countStr(){ return `${ci+1} / ${CIRCUIT4.length}`; }
@@ -1452,14 +1729,28 @@ const W4 = (() => {
   }
 
   function end(){
-    setBarWidth(100);
     showScreen('s-w4-end'); bar.classList.remove('on');
-    say('Grande Paolo, finito.'); buzz([80,60,80,60,160]); Music.fadeOut();
+    buzz([80,60,80,60,160]); Music.fadeOut();
     clearInterval(timer);
+    const t = fmt(Math.round((Date.now()-wodStartedAt)/1000));
+    if(gaveUp){
+      setBarWidth(Math.round((slot()/W4_SLOTS)*100));
+      $('w4-end-h1').innerHTML   = 'Sessione<br>interrotta';
+      $('w4-end-msg').textContent= `Arreso a ${t} — giro ${round+1}/${W4_ROUNDS}, esercizio ${ci+1}/${CIRCUIT4.length}.`;
+      lastShare = `BARE · WOD 4 — Functional\nArreso a ${t} · giro ${round+1}/${W4_ROUNDS}, es. ${ci+1}/${CIRCUIT4.length}\n${shareDate()}`;
+      say('Ok, ci fermiamo qui.');
+    } else {
+      setBarWidth(100);
+      $('w4-end-h1').innerHTML   = 'WOD 4<br>Completato';
+      $('w4-end-msg').textContent= '3 giri di functional nel sacco. Full-body acceso — bel lavoro.';
+      lastShare = `BARE · WOD 4 — Functional\nTempo: ${t} · ${W4_ROUNDS} giri\n${shareDate()}`;
+      say('Grande Paolo, finito.');
+    }
   }
 
   return {
-    start()    { round=0; ci=0; preread(); },
+    start()    { round=0; ci=0; gaveUp=false; wodStartedAt=Date.now(); preread(); },
+    giveUp()   { clearInterval(timer); gaveUp=true; end(); },
     stop()     { clearInterval(timer); timer=null; },
     skipPrep() { clearInterval(timer); work(); },
     skipEx()   { clearInterval(timer); afterWork(); },
@@ -1484,13 +1775,152 @@ $('btn-w4-skip-ex').addEventListener('click',   ()=>W4.skipEx());
 $('btn-w4-skip-rest').addEventListener('click', ()=>W4.skipRest());
 $('btn-w4-pause').addEventListener('click',     ()=>W4.pause());
 $('btn-w4-resume').addEventListener('click',    ()=>W4.unpause());
+$('btn-w4-giveup').addEventListener('click',    ()=>W4.giveUp());
+$('btn-w4-share').addEventListener('click',     ()=>shareResult());
 $('btn-w4-home').addEventListener('click',      ()=>goHome());
 $('btn-w4-again').addEventListener('click',     ()=>{ Music.start('w4'); W4.start(); });
+
+/* ═══════════════════════════════════════
+   WOD 6 — CORE ENGINE (circuito a tempo)
+   ═══════════════════════════════════════ */
+const W6_ROUNDS = 2;
+const W6_WORK   = 30;
+const W6_REST   = 15;
+const CIRCUIT6 = [
+  { name:'Sit-through',       lang:'en', steps:['Posizione bear, ginocchia sollevate','Ruota il bacino e passa una gamba sotto il corpo','Torna e alterna i lati'] },
+  { name:'Hollow Hold',       lang:'en', steps:['Supino, lombare incollata a terra','Scapole e gambe tese sollevate','Tieni la barchetta, respira'] },
+  { name:'Tuck-up',           lang:'en', steps:['Seduto in equilibrio sugli ischi','Richiama esplosivo le ginocchia al petto','Ridistendi controllando'] },
+  { name:'Bird-dog',          lang:'en', steps:['A quattro zampe, schiena piatta','Allunga braccio e gamba opposti','Bacino fermo — alterna senza ruotare'] },
+  { name:'Plank to Pike',     lang:'en', steps:['In plank alto, corpo in linea','Spingi il bacino in alto a V (pike)','Torna in plank controllando'] },
+  { name:'Mountain Climber',  lang:'en', steps:['In plank alto, bacino basso','Ginocchia al petto veloci e ritmate','Addome di pietra'] },
+];
+const W6_SLOTS = W6_ROUNDS * CIRCUIT6.length;
+
+const W6 = (() => {
+  let round=0, ci=0, timer=null, left=0, paused=false, gaveUp=false;
+
+  const slot = () => round*CIRCUIT6.length + ci;
+  function countStr(){ return `${ci+1} / ${CIRCUIT6.length}`; }
+  function updateBar(){ setBarWidth(Math.round((slot()/W6_SLOTS)*100)); }
+
+  function preread(){
+    const item = CIRCUIT6[ci];
+    showScreen('s-w6-preread','var(--prep)');
+    $('w6pr-block').textContent = `Giro ${round+1}/${W6_ROUNDS}`;
+    $('w6pr-name').textContent  = item.name;
+    renderSteps($('w6pr-steps'), item.steps);
+    $('w6pr-count').textContent = countStr();
+    updateBar();
+    left=10; primeRing($('w6pr-ring'));
+    setDial($('w6pr-num'),$('w6pr-ring'),left,10);
+    say('Preparati.');
+    clearInterval(timer);
+    timer = setInterval(()=>{ left--; setDial($('w6pr-num'),$('w6pr-ring'),Math.max(0,left),10); if(left<=0){ clearInterval(timer); work(); } },1000);
+  }
+
+  function work(){
+    const item = CIRCUIT6[ci];
+    paused=false;
+    showScreen('s-w6-ex','var(--w6)');
+    $('btn-w6-pause').hidden=false; $('btn-w6-resume').hidden=true;
+    $('w6ex-block').textContent = `Giro ${round+1}/${W6_ROUNDS}`;
+    $('w6ex-name').textContent  = item.name;
+    $('w6ex-dose').textContent  = `${W6_WORK} sec`;
+    $('w6ex-count').textContent = countStr();
+    renderSteps($('w6ex-steps'), item.steps);
+    $('w6ex-dial').classList.remove('ending');
+    updateBar();
+    left=W6_WORK; primeRing($('w6ex-ring'));
+    setDial($('w6ex-num'),$('w6ex-ring'),left,W6_WORK);
+    say(item.name, item.lang); buzz(60);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      if(paused) return;
+      left--; setDial($('w6ex-num'),$('w6ex-ring'),Math.max(0,left),W6_WORK);
+      $('w6ex-dial').classList.toggle('ending', left<=3 && left>0);
+      if(left<=0){ clearInterval(timer); $('w6ex-dial').classList.remove('ending'); afterWork(); }
+    },1000);
+  }
+
+  function afterWork(){
+    if(round===W6_ROUNDS-1 && ci===CIRCUIT6.length-1){ end(); return; }
+    rest();
+  }
+
+  function rest(){
+    let nci=ci+1, nr=round;
+    if(nci>=CIRCUIT6.length){ nci=0; nr=round+1; }
+    showScreen('s-w6-rest','var(--rest)');
+    $('w6rs-count').textContent = `${slot()+1} / ${W6_SLOTS}`;
+    const nxt = CIRCUIT6[nci];
+    const roundNote = nr!==round ? ` · Giro ${nr+1}` : '';
+    $('w6rs-next').innerHTML = `Prossimo: <b>${nxt.name}</b>${roundNote}`;
+    left=W6_REST; primeRing($('w6rs-ring'));
+    setDial($('w6rs-num'),$('w6rs-ring'),left,W6_REST);
+    say('Pausa.'); buzz(30);
+    clearInterval(timer);
+    timer = setInterval(()=>{
+      left--; setDial($('w6rs-num'),$('w6rs-ring'),Math.max(0,left),W6_REST);
+      if(left<=0){ clearInterval(timer); ci=nci; round=nr; work(); }
+    },1000);
+  }
+
+  function end(){
+    showScreen('s-w6-end'); bar.classList.remove('on');
+    buzz([80,60,80,60,160]); Music.fadeOut();
+    clearInterval(timer);
+    const t = fmt(Math.round((Date.now()-wodStartedAt)/1000));
+    if(gaveUp){
+      setBarWidth(Math.round((slot()/W6_SLOTS)*100));
+      $('w6-end-h1').innerHTML   = 'Sessione<br>interrotta';
+      $('w6-end-msg').textContent= `Arreso a ${t} — giro ${round+1}/${W6_ROUNDS}, esercizio ${ci+1}/${CIRCUIT6.length}.`;
+      lastShare = `BARE · WOD 6 — Core Engine\nArreso a ${t} · giro ${round+1}/${W6_ROUNDS}, es. ${ci+1}/${CIRCUIT6.length}\n${shareDate()}`;
+      say('Ok, ci fermiamo qui.');
+    } else {
+      setBarWidth(100);
+      $('w6-end-h1').innerHTML   = 'Core<br>Acceso';
+      $('w6-end-msg').textContent= 'Centro del corpo allenato: il transfer va su tutto il resto. Corto ma tosto.';
+      lastShare = `BARE · WOD 6 — Core Engine\nTempo: ${t} · ${W6_ROUNDS} giri\n${shareDate()}`;
+      say('Grande Paolo, core acceso.');
+    }
+  }
+
+  return {
+    start()    { round=0; ci=0; gaveUp=false; wodStartedAt=Date.now(); preread(); },
+    giveUp()   { clearInterval(timer); gaveUp=true; end(); },
+    stop()     { clearInterval(timer); timer=null; },
+    skipPrep() { clearInterval(timer); work(); },
+    skipEx()   { clearInterval(timer); afterWork(); },
+    skipRest() {
+      clearInterval(timer);
+      let nci=ci+1, nr=round;
+      if(nci>=CIRCUIT6.length){ nci=0; nr=round+1; }
+      ci=nci; round=nr; work();
+    },
+    pause()    { paused=true;  $('btn-w6-pause').hidden=true;  $('btn-w6-resume').hidden=false; $('w6ex-dial').classList.remove('ending'); },
+    unpause()  { paused=false; $('btn-w6-pause').hidden=false; $('btn-w6-resume').hidden=true; },
+  };
+})();
+
+$('card-w6').addEventListener('click',()=>{
+  requestWakeLock();
+  if(synth) synth.speak(new SpeechSynthesisUtterance(''));
+  Music.start('w6'); W6.start();
+});
+$('btn-w6-skip-prep').addEventListener('click', ()=>W6.skipPrep());
+$('btn-w6-skip-ex').addEventListener('click',   ()=>W6.skipEx());
+$('btn-w6-skip-rest').addEventListener('click', ()=>W6.skipRest());
+$('btn-w6-pause').addEventListener('click',     ()=>W6.pause());
+$('btn-w6-resume').addEventListener('click',    ()=>W6.unpause());
+$('btn-w6-giveup').addEventListener('click',    ()=>W6.giveUp());
+$('btn-w6-share').addEventListener('click',     ()=>shareResult());
+$('btn-w6-home').addEventListener('click',      ()=>goHome());
+$('btn-w6-again').addEventListener('click',     ()=>{ Music.start('w6'); W6.start(); });
 
 $('ver-badge').textContent = 'v' + APP_VERSION;
 
 /* Accessibilità tastiera per le card */
-[$('card-w1'),$('card-w2'),$('card-w3'),$('card-w4')].forEach(c=>{
+[$('card-w1'),$('card-w2'),$('card-w3'),$('card-w4'),$('card-w6')].forEach(c=>{
   c.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') c.click(); });
 });
 </script>
