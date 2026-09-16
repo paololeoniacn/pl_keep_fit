@@ -70,9 +70,23 @@ The app is published to Cloudflare Pages (project `bare`) for a real HTTPS URL �
 required for the screen wake-lock, and for "Add to Home Screen" on the phone.
 
 - **Command**: `./deploy.sh` — copies `BARE.html` → `dist/index.html` and runs
-  `wrangler pages deploy dist --project-name bare`. Only the app is uploaded (no
+  `wrangler pages deploy dist --project-name bare-wod`. Only the app is uploaded (no
   videos/md/screenshots — Pages has a 25 MB/file limit and `NEWS/` holds large videos).
-- **Config**: `wrangler.toml` (`name = "bare"`, `pages_build_output_dir = "dist"`).
-- **Auth (one-time)**: `npx wrangler login` (OAuth) or `CLOUDFLARE_API_TOKEN` env var
-  with **Pages: Edit** permission.
+- **Config**: `wrangler.toml` (`name = "bare-wod"`, `pages_build_output_dir = "dist"`).
+  Live URL: `https://bare-wod.pages.dev/`. The version badge in the footer is
+  `APP_VERSION` in the `<script>` (bump it each release).
+- **Auth**: `CLOUDFLARE_API_TOKEN` (permesso *Pages: Edit*) in `.dev.vars` (gitignored),
+  caricato automaticamente da `deploy.sh`.
 - `dist/` is a build artifact (gitignored, regenerated each deploy).
+
+## Autonomia (vale solo per questo progetto)
+
+Hai ampia libertà operativa qui: modifica i file, esegui `./deploy.sh`, lancia script di
+build/screenshot, fai `git commit`, ricarica e verifica — **senza chiedere conferma ogni
+volta**. Deploy e commit in autonomia sono attesi e graditi; itera liberamente.
+
+Due limiti restano:
+- **Protocollo Cerniera** (vedi CLAUDE.md globale): se in root esiste `.protocolloCerniera`,
+  il freno globale ha la precedenza — niente deploy, push o scritture esterne finché c'è.
+- `git push` e operazioni git distruttive non richieste (force-push, `reset --hard`,
+  riscrittura history): chiedile prima, salvo istruzione esplicita del momento.

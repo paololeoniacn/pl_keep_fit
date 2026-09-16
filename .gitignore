@@ -12,5 +12,8 @@ node_modules/
 # macOS
 .DS_Store
 
+# Permessi personali Claude Code (locali, non condivisi)
+.claude/settings.local.json
+
 # Materiale sorgente pesante (reel Instagram) — ri-scaricabile, non versionato
 NEWS/*.mp4
