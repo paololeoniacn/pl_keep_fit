@@ -1,4 +1,4 @@
-<!-- BARE v10 —— bump VERSION in JS when releasing -->
+<!-- BARE v11 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -281,8 +281,28 @@ body{
 .dial.ending .dial-num{ animation:tick .9s var(--ease) infinite; }
 @keyframes tick{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
 
-.rest-next{ margin-top:.5rem; font-size:.98rem; color:var(--muted); line-height:1.35; }
-.rest-next b{ color:var(--ink); font-weight:750; }
+/* Anteprima del prossimo esercizio durante il recupero */
+.rest-preview{
+  width:100%; max-width:32rem; margin:0 auto; text-align:left;
+  border-top:1px solid var(--line); padding-top:var(--sp-4);
+}
+.rest-next-label{
+  font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--phase);
+}
+.rest-next-name{
+  font-size:1.2rem; font-weight:800; letter-spacing:-.02em; color:var(--ink);
+  margin:.2rem 0 var(--sp-3); line-height:1.15;
+}
+.rest-next-name .round-note{ color:var(--muted); font-weight:600; font-size:.85rem; }
+.rest-steps{ margin-top:0; }
+.rest-steps li{ color:var(--muted); font-size:clamp(.9rem,3.6vw,1rem); }
+.rest-steps li::before{ opacity:.85; }
+/* Recupero: dial più compatto e in alto, così l'anteprima ha spazio */
+#s-w1-rest .dial-wrap, #s-w4-rest .dial-wrap, #s-w6-rest .dial-wrap{
+  margin:var(--sp-2) auto var(--sp-5); flex:none;
+}
+#s-w1-rest .dial, #s-w4-rest .dial, #s-w6-rest .dial{ width:clamp(120px,22vh,176px); }
 
 /* Controlli — spinti in fondo con margin-top:auto */
 .controls{
@@ -617,7 +637,11 @@ body{
       </div>
     </div>
   </div>
-  <div class="rest-next" id="w1rs-next"></div>
+  <div class="rest-preview">
+    <div class="rest-next-label">Prossimo</div>
+    <div class="rest-next-name" id="w1rs-next"></div>
+    <ol class="steps rest-steps" id="w1rs-steps"></ol>
+  </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w1-skip-rest">Salta pausa &nbsp;›</button>
   </div>
@@ -887,7 +911,11 @@ body{
       </div>
     </div>
   </div>
-  <div class="rest-next" id="w4rs-next"></div>
+  <div class="rest-preview">
+    <div class="rest-next-label">Prossimo</div>
+    <div class="rest-next-name" id="w4rs-next"></div>
+    <ol class="steps rest-steps" id="w4rs-steps"></ol>
+  </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w4-skip-rest">Salta pausa &nbsp;›</button>
   </div>
@@ -1003,7 +1031,11 @@ body{
       </div>
     </div>
   </div>
-  <div class="rest-next" id="w6rs-next"></div>
+  <div class="rest-preview">
+    <div class="rest-next-label">Prossimo</div>
+    <div class="rest-next-name" id="w6rs-next"></div>
+    <ol class="steps rest-steps" id="w6rs-steps"></ol>
+  </div>
   <div class="controls">
     <button class="btn btn-primary btn-block" id="btn-w6-skip-rest">Salta pausa &nbsp;›</button>
   </div>
@@ -1036,7 +1068,7 @@ body{
 "use strict";
 
 /* ── Helpers ── */
-const APP_VERSION = '10';
+const APP_VERSION = '11';
 const $ = id => document.getElementById(id);
 const fmt = s => s >= 60
   ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
@@ -1379,7 +1411,16 @@ const W1 = (() => {
     showScreen('s-w1-rest','var(--rest)');
     $('w1rs-count').textContent = countStr();
     const nxt = WOD1[idx];
-    $('w1rs-next').innerHTML = nxt ? `Prossimo: <b>${nxt.name}</b>` : 'Ultimo sforzo!';
+    const lbl1 = $('w1rs-next').parentElement.querySelector('.rest-next-label');
+    if(nxt){
+      lbl1.style.display = '';
+      $('w1rs-next').textContent = nxt.name;
+      renderSteps($('w1rs-steps'), nxt.steps || []);
+    } else {
+      lbl1.style.display = 'none';
+      $('w1rs-next').textContent = 'Ultimo sforzo!';
+      $('w1rs-steps').innerHTML = '';
+    }
     updateBar();
     left=item.time; primeRing($('w1rs-ring'));
     setDial($('w1rs-num'),$('w1rs-ring'),left,left);
@@ -1729,7 +1770,8 @@ const W4 = (() => {
     $('w4rs-count').textContent = `${slot()+1} / ${W4_SLOTS}`;
     const nxt = CIRCUIT4[nci];
     const roundNote = nr!==round ? ` · Giro ${nr+1}` : '';
-    $('w4rs-next').innerHTML = `Prossimo: <b>${nxt.name}</b>${roundNote}`;
+    $('w4rs-next').innerHTML = `${nxt.name}<span class="round-note">${roundNote}</span>`;
+    renderSteps($('w4rs-steps'), nxt.steps);
     left=W4_REST; primeRing($('w4rs-ring'));
     setDial($('w4rs-num'),$('w4rs-ring'),left,W4_REST);
     say('Pausa.'); buzz(30);
@@ -1866,7 +1908,8 @@ const W6 = (() => {
     $('w6rs-count').textContent = `${slot()+1} / ${W6_SLOTS}`;
     const nxt = CIRCUIT6[nci];
     const roundNote = nr!==round ? ` · Giro ${nr+1}` : '';
-    $('w6rs-next').innerHTML = `Prossimo: <b>${nxt.name}</b>${roundNote}`;
+    $('w6rs-next').innerHTML = `${nxt.name}<span class="round-note">${roundNote}</span>`;
+    renderSteps($('w6rs-steps'), nxt.steps);
     left=W6_REST; primeRing($('w6rs-ring'));
     setDial($('w6rs-num'),$('w6rs-ring'),left,W6_REST);
     say('Pausa.'); buzz(30);
