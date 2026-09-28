@@ -1,4 +1,4 @@
-<!-- BARE v11 —— bump VERSION in JS when releasing -->
+<!-- BARE v12 —— bump VERSION in JS when releasing -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -91,6 +91,11 @@ body{
 #btn-music.muted{ color:var(--faint); }
 #btn-music.muted .i-on{ display:none; }
 #btn-music.muted .i-off{ display:block; }
+#btn-cue{ right:calc(.75rem + 44px + .5rem); }
+#btn-cue .i-vibra{ display:none; }
+#btn-cue.vibra{ color:var(--faint); }
+#btn-cue.vibra .i-voce{ display:none; }
+#btn-cue.vibra .i-vibra{ display:block; }
 
 /* ── Barra progresso sessione ── */
 #session-bar{
@@ -199,7 +204,7 @@ body{
   width:100%; max-width:34rem;
   display:flex; align-items:center; justify-content:space-between; gap:1rem;
   font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
-  padding-left:2.75rem; padding-right:2.75rem;
+  padding-left:2.75rem; padding-right:6rem; /* destra: due pulsanti fissi (musica + voce/vibra) */
 }
 .s-phase{ color:var(--phase); display:inline-flex; align-items:center; gap:.5rem; min-width:0; }
 .s-dot{ width:.45rem; height:.45rem; border-radius:50%; background:var(--phase); flex:none; }
@@ -460,6 +465,10 @@ body{
 <button id="btn-music" class="g-btn" aria-label="Musica" aria-pressed="true">
   <svg class="i-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.8 5.2a9 9 0 0 1 0 13.6"/></svg>
   <svg class="i-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m17 9 6 6"/><path d="m23 9-6 6"/></svg>
+</button>
+<button id="btn-cue" class="g-btn" aria-label="Voce / Vibrazione" aria-pressed="true">
+  <svg class="i-voce" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 15-5v13L3 14z"/><path d="M18 8a4 4 0 0 1 0 8"/></svg>
+  <svg class="i-vibra" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/><path d="M3 9v6"/><path d="M21 9v6"/></svg>
 </button>
 <div id="session-bar"><div id="session-fill"></div></div>
 <div id="toast" class="toast"></div>
@@ -1095,7 +1104,12 @@ function renderSteps(ol, steps){
 /* ── Navigazione ── */
 const allScreens = document.querySelectorAll('.screen');
 const bar = $('session-bar'), fill = $('session-fill');
-const btnBack = $('btn-back'), btnMusic = $('btn-music');
+const btnBack = $('btn-back'), btnMusic = $('btn-music'), btnCue = $('btn-cue');
+
+/* Modalità indicazioni: voce (parlato) oppure vibrazione (solo aptico). Scelta salvata. */
+let cueVoice = !(typeof localStorage!=='undefined' && localStorage.getItem('bare-cue')==='vibra');
+function syncCueBtn(){ btnCue.classList.toggle('vibra', !cueVoice); btnCue.setAttribute('aria-pressed', String(cueVoice)); }
+syncCueBtn();
 
 let backArmed = false;   // c'è una voce history da "consumare" col back?
 
@@ -1106,6 +1120,7 @@ function showScreen(id, barColor){
   const isEnd  = id.endsWith('-end');
   btnBack.classList.toggle('visible',  !isHome);
   btnMusic.classList.toggle('visible', !isHome);
+  btnCue.classList.toggle('visible', !isHome);
   bar.classList.toggle('on', !isHome && !isEnd);
   if(barColor) fill.style.background = barColor;
   // Lasciando la home, arma il back del telefono → tornerà qui invece di uscire
@@ -1132,7 +1147,7 @@ btnBack.addEventListener('click', navHome);
 const synth = window.speechSynthesis;
 
 function say(txt, lang){
-  if(!synth) return;
+  if(!synth || !cueVoice) return;   // in modalità vibrazione: nessuna voce
   synth.cancel();
   const u = new SpeechSynthesisUtterance(txt);
   u.lang = lang === 'en' ? 'en-US' : 'it-IT';
@@ -1285,6 +1300,12 @@ const Music = (() => {
 
 Music.sync();
 btnMusic.addEventListener('click', () => Music.toggle());
+btnCue.addEventListener('click', () => {
+  cueVoice = !cueVoice;
+  try{ localStorage.setItem('bare-cue', cueVoice ? 'voce' : 'vibra'); }catch(_){}
+  if(!cueVoice && synth) synth.cancel();   // passando a vibrazione, taglia la voce in corso
+  syncCueBtn(); buzz(30);
+});
 
 /* ═══════════════════════════════════════
    WOD 1 — DATI
